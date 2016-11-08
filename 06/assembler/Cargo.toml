@@ -2,3 +2,6 @@
 name = "assembler"
 version = "0.1.0"
 authors = ["mohanrajendran <lynermohan@gmail.com>"]
+
+[dependencies]
+getopts = "0.2"
