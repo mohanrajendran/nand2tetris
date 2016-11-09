@@ -90,6 +90,10 @@ impl<'a> Parser<'a> {
     }
 
     pub fn assemble(&mut self) -> String {
+        self.second_pass()
+    }
+
+    pub fn second_pass(&mut self) -> String {
         let mut prog = String::new();
 
         while self.has_more_commands() {

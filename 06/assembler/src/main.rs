@@ -9,6 +9,7 @@ use getopts::ParsingStyle;
 
 pub mod parser;
 pub mod code;
+pub mod symbol_table;
 use parser::Parser;
 
 fn main() {
