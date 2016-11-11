@@ -1,5 +1,3 @@
-use code::Code;
-
 pub struct Parser<'a> {
     buffer: &'a str,
     remaining: &'a str,
@@ -22,14 +20,14 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn has_more_commands(&self) -> bool {
+    pub fn has_more_commands(&self) -> bool {
         self.remaining.lines().any(|line| {
             let line = line.trim();
             !(line.is_empty() || line.starts_with("//"))
         })
     }
 
-    fn advance(&mut self) -> () {
+    pub fn advance(&mut self) -> () {
         self.current = "";
         while self.current.is_empty() || self.current.starts_with("//") {
             let lines: Vec<&str> = self.remaining.splitn(2, '\n').collect();
@@ -38,7 +36,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn command_type(&self) -> CommandType {
+    pub fn command_type(&self) -> CommandType {
         if self.current.starts_with("@") {
             CommandType::ACommand
         } else if self.current.starts_with("(") {
@@ -48,7 +46,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn symbol(&self) -> &str {
+    pub fn symbol(&self) -> &str {
         match self.command_type() {
             CommandType::ACommand => &self.current[1..],
             CommandType::LCommand => self.current
@@ -58,7 +56,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn dest(&self) -> Option<&str> {
+    pub fn dest(&self) -> Option<&str> {
         if !self.current.contains("=") {
             None
         } else {
@@ -67,7 +65,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn comp(&self) -> &str {
+    pub fn comp(&self) -> &str {
         let mut comp = self.current;
         if comp.contains("=") {
             let temp: Vec<&str> = comp.split('=').collect();
@@ -80,42 +78,13 @@ impl<'a> Parser<'a> {
         comp
     }
 
-    fn jump(&self) -> Option<&str> {
+    pub fn jump(&self) -> Option<&str> {
         if !self.current.contains(";") {
             None
         } else {
             let temp: Vec<&str> = self.current.split(';').collect();
             Some(temp[1])
         }
-    }
-
-    pub fn assemble(&mut self) -> String {
-        self.second_pass()
-    }
-
-    pub fn second_pass(&mut self) -> String {
-        let mut prog = String::new();
-
-        while self.has_more_commands() {
-            self.advance();
-
-            let opcode = match self.command_type() {
-                CommandType::ACommand => {
-                    let loc = self.symbol().parse::<u16>().unwrap();
-                    format!("{:016b}\n", loc)
-                },
-                CommandType::CCommand => {
-                    let comp = Code::comp(self.comp());
-                    let dest = Code::dest(self.dest());
-                    let jump = Code::jump(self.jump());
-                    format!("111{}{}{}\n", comp, dest, jump)
-                },
-                _ => String::new()
-            };
-
-            prog.push_str(&opcode);
-        }
-        prog
     }
 
     pub fn print(&self) {
