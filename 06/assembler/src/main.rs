@@ -15,6 +15,7 @@ pub mod code;
 use code::Code;
 
 pub mod symbol_table;
+use symbol_table::SymbolTable;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -45,9 +46,41 @@ fn main() {
     in_file.read_to_string(&mut buffer).expect("Unable to read file.");
     let buffer = buffer;
 
+    let mut symbol_table = predefined_symbol_table();
     let assembly = assemble(buffer);
+
     let mut out_file = File::create(out_file_name).expect("Unable to create file.");
     out_file.write_all(assembly.as_bytes()).expect("Unable to write to file.");
+}
+
+fn predefined_symbol_table<'a>() -> SymbolTable<'a> {
+    let mut symbol_table = SymbolTable::new();
+
+    symbol_table.add_entry("SP", 0);
+    symbol_table.add_entry("LCL", 1);
+    symbol_table.add_entry("ARG", 2);
+    symbol_table.add_entry("THIS", 3);
+    symbol_table.add_entry("THAT", 4);
+    symbol_table.add_entry("R0", 0);
+    symbol_table.add_entry("R1", 1);
+    symbol_table.add_entry("R2", 2);
+    symbol_table.add_entry("R3", 3);
+    symbol_table.add_entry("R4", 4);
+    symbol_table.add_entry("R5", 5);
+    symbol_table.add_entry("R6", 6);
+    symbol_table.add_entry("R7", 7);
+    symbol_table.add_entry("R8", 8);
+    symbol_table.add_entry("R9", 9);
+    symbol_table.add_entry("R10", 10);
+    symbol_table.add_entry("R11", 11);
+    symbol_table.add_entry("R12", 12);
+    symbol_table.add_entry("R13", 13);
+    symbol_table.add_entry("R14", 14);
+    symbol_table.add_entry("R15", 15);
+    symbol_table.add_entry("SCREEN", 16384);
+    symbol_table.add_entry("KBD", 24576);
+
+    symbol_table
 }
 
 fn assemble(buffer: String) -> String {
