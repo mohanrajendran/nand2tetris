@@ -44,16 +44,16 @@ fn main() {
     let mut in_file = File::open(in_file_name).expect("Unable to find file.");
     let mut buffer = String::new();
     in_file.read_to_string(&mut buffer).expect("Unable to read file.");
-    let buffer = buffer;
+    let buffer = &buffer;
 
-    let mut symbol_table = predefined_symbol_table();
-    let assembly = assemble(buffer);
+    let symbol_table = parse_labels(buffer);
+    let assembly = assemble(buffer, symbol_table);
 
     let mut out_file = File::create(out_file_name).expect("Unable to create file.");
     out_file.write_all(assembly.as_bytes()).expect("Unable to write to file.");
 }
 
-fn predefined_symbol_table<'a>() -> SymbolTable<'a> {
+fn predefined_symbol_table<'a>() -> SymbolTable<'a>{
     let mut symbol_table = SymbolTable::new();
 
     symbol_table.add_entry("SP", 0);
@@ -83,16 +83,43 @@ fn predefined_symbol_table<'a>() -> SymbolTable<'a> {
     symbol_table
 }
 
-fn assemble(buffer: String) -> String {
+fn parse_labels<'a>(buffer:&'a str) -> SymbolTable<'a> {
+    let mut parser = Parser::new(buffer);
+    let mut symbol_table = predefined_symbol_table();
+    let mut line_number: u16 = 0;
+
+    while parser.has_more_commands() {
+        parser.advance();
+        if parser.command_type() == CommandType::LCommand {
+            symbol_table.add_entry(parser.symbol(), line_number);
+        } else {
+            line_number = line_number + 1;
+        }
+    }
+
+    symbol_table
+}
+
+fn assemble<'a>(buffer:&'a str, mut symbol_table:SymbolTable<'a>) -> String {
     let mut parser = Parser::new(&buffer);
     let mut prog = String::new();
+    let mut next_address: u16 = 16;
 
     while parser.has_more_commands() {
         parser.advance();
 
         let opcode = match parser.command_type() {
             CommandType::ACommand => {
-                let loc = parser.symbol().parse::<u16>().unwrap();
+                let loc:u16 = match parser.symbol().parse::<u16>() {
+                    Ok(v) => v,
+                    _ => {
+                        if !symbol_table.contains(parser.symbol()) {
+                            symbol_table.add_entry(parser.symbol(), next_address);
+                            next_address = next_address + 1;
+                        }
+                        symbol_table.get_address(parser.symbol())
+                    }
+                };
                 format!("{:016b}\n", loc)
             },
             CommandType::CCommand => {

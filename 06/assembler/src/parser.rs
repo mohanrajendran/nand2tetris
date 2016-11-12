@@ -30,9 +30,10 @@ impl<'a> Parser<'a> {
     pub fn advance(&mut self) -> () {
         self.current = "";
         while self.current.is_empty() || self.current.starts_with("//") {
-            let lines: Vec<&str> = self.remaining.splitn(2, '\n').collect();
-            self.current = lines[0].trim();
-            self.remaining = lines[1];
+            let mut lines = self.remaining.splitn(2, '\n');
+            self.current = lines.next().unwrap();
+            self.current = self.current.splitn(2, '/').next().unwrap().trim();
+            self.remaining = lines.next().unwrap_or("");
         }
     }
 
@@ -46,7 +47,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn symbol(&self) -> &str {
+    pub fn symbol(&self) -> &'a str {
         match self.command_type() {
             CommandType::ACommand => &self.current[1..],
             CommandType::LCommand => self.current
@@ -56,7 +57,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn dest(&self) -> Option<&str> {
+    pub fn dest(&self) -> Option<&'a str> {
         if !self.current.contains("=") {
             None
         } else {
@@ -65,7 +66,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn comp(&self) -> &str {
+    pub fn comp(&self) -> &'a str {
         let mut comp = self.current;
         if comp.contains("=") {
             let temp: Vec<&str> = comp.split('=').collect();
