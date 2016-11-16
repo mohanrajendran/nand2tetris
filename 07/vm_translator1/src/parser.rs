@@ -6,7 +6,8 @@ pub struct Parser<'a> {
 #[derive(Debug, PartialEq)]
 pub enum CommandType {
     CArithmetic,
-    CPush
+    CPush,
+    CPop
 }
 
 impl<'a> Parser<'a> {
@@ -42,8 +43,10 @@ impl<'a> Parser<'a> {
 
         if tokens.len() == 1 {
             CommandType::CArithmetic
-        } else {
+        } else if tokens[0] == "push" {
             CommandType::CPush
+        } else {
+            CommandType::CPop
         }
     }
 
