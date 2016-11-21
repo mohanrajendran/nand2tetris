@@ -174,6 +174,73 @@ impl<'a> CodeWriter<'a> {
                                D;JNE \n", label);
     }
 
+    pub fn write_function(&mut self, function_name: &str, num_locals: u16) -> () {
+        write!(self.out_file, "({})\n", function_name);
+
+        if num_locals != 0 {
+            self.out_file.write(b"@SP \n\
+                                  A=M \n\
+                                  M=0\n");
+
+            for i in 1..num_locals {
+                self.out_file.write(b"A=A+1 \n\
+                                      M=0\n");
+            }
+
+            write!(self.out_file, "@{} \n\
+                                   D=A \n\
+                                   @SP \n\
+                                   M=D+M \n", num_locals);
+        }
+    }
+
+    pub fn write_return(&mut self) -> () {
+        // FRAME(R14) = LCL
+        // RET(R15) = *(FRAME-5)
+        self.out_file.write(b"@LCL \n\
+                              D=M \n\
+                              @R14 \n\
+                              M=D \n\
+                              @5 \n\
+                              A=D-A \n\
+                              D=M \n\
+                              @R15 \n\
+                              M=D \n");
+
+        // *ARG = pop()
+        self.out_file.write(b"@SP \n\
+                              A=M-1 \n\
+                              D=M \n\
+                              @ARG \n\
+                              A=M \n\
+                              M=D \n");
+
+        // SP = ARG+1
+        self.out_file.write(b"@ARG \n\
+                              D=M+1 \n\
+                              @SP \n\
+                              M=D \n");
+
+        // Restore THAT, THIS, ARG and LCL
+        self.write_restore("THAT");
+        self.write_restore("THIS");
+        self.write_restore("ARG");
+        self.write_restore("LCL");
+
+        // go to return
+        self.out_file.write(b"@R15 \n\
+                              A=M \n\
+                              0;JMP \n");
+    }
+
+    fn write_restore(&mut self, register: &str) -> () {
+        write!(self.out_file, "@R14 \n\
+                               AM=M-1 \n\
+                               D=M \n\
+                               @{} \n\
+                               M=D \n", register);
+    }
+
     pub fn close(&mut self) -> () {
         write!(self.out_file, "(END) \n\
                                @END \n\

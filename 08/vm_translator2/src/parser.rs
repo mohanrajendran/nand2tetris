@@ -10,7 +10,9 @@ pub enum CommandType {
     CPop,
     CLabel,
     CGoto,
-    CIf
+    CIf,
+    CFunction,
+    CReturn
 }
 
 impl<'a> Parser<'a> {
@@ -45,7 +47,13 @@ impl<'a> Parser<'a> {
         let tokens:Vec<&str> = self.current_line.split(' ').collect();
 
         match tokens.len() {
-            1 => CommandType::CArithmetic,
+            1 => {
+                if tokens[0] == "return" {
+                    CommandType::CReturn
+                } else {
+                    CommandType::CArithmetic
+                }
+            },
             2 => {
                 if tokens[0] == "label" {
                     CommandType::CLabel
@@ -58,8 +66,10 @@ impl<'a> Parser<'a> {
             3 => {
                 if tokens[0] == "push" {
                     CommandType::CPush
-                } else {
+                } else if tokens[1] == "pop" {
                     CommandType::CPop
+                } else {
+                    CommandType::CFunction
                 }
             }
             _ => panic!("Unknown number of tokens.")

@@ -74,6 +74,12 @@ fn translate<'a>(buffer:&'a str,mut code_writer: CodeWriter<'a>, in_file_name: &
             },
             CommandType::CIf => {
                 code_writer.write_if(parser.arg1());
+            },
+            CommandType::CFunction => {
+                code_writer.write_function(parser.arg1(), parser.arg2());
+            },
+            CommandType::CReturn => {
+                code_writer.write_return();
             }
         }
     }
