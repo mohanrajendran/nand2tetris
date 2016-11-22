@@ -7,7 +7,7 @@ use parser::CommandType;
 pub struct CodeWriter<'a> {
     out_file: File,
     file_name: &'a str,
-    arithmetic_counter: u16
+    counter: u16
 }
 
 impl<'a> CodeWriter<'a> {
@@ -15,7 +15,7 @@ impl<'a> CodeWriter<'a> {
         CodeWriter {
             out_file: out_file,
             file_name: "",
-            arithmetic_counter: 0
+            counter: 0
         }
     }
 
@@ -69,8 +69,8 @@ impl<'a> CodeWriter<'a> {
                                @SP \n\
                                A=M-1 \n\
                                M=-1 \n\
-                               (CONTINUE{0})\n", self.arithmetic_counter, jump);
-        self.arithmetic_counter = self.arithmetic_counter + 1;
+                               (CONTINUE{0})\n", self.counter, jump);
+        self.counter = self.counter + 1;
     }
 
     pub fn write_push_pop(&mut self, command: CommandType, segment: &str, index: u16) -> () {
@@ -89,11 +89,7 @@ impl<'a> CodeWriter<'a> {
                 "temp"     => self.write_load_literal(format!("{}", 5+index), false),
                 &_ => ()
             }
-            self.out_file.write(b"@SP \n\
-                                  A=M \n\
-                                  M=D \n\
-                                  @SP \n\
-                                  M=M+1\n");
+            self.write_push_and_increment();
         } else {
             match segment.to_lowercase().as_ref() {
                 "argument" => self.write_temp_offset("ARG", index),
@@ -123,6 +119,14 @@ impl<'a> CodeWriter<'a> {
                 &_ => ()
             }
         }
+    }
+
+    fn write_push_and_increment(&mut self) -> () {
+        self.out_file.write(b"@SP \n\
+                              A=M \n\
+                              M=D \n\
+                              @SP \n\
+                              M=M+1\n");
     }
 
     fn write_copy_to_temp(&mut self, location: String) -> () {
@@ -239,6 +243,54 @@ impl<'a> CodeWriter<'a> {
                                D=M \n\
                                @{} \n\
                                M=D \n", register);
+    }
+
+    pub fn write_call(&mut self, function_name: &str, num_args: u16) -> () {
+        //Push return-address
+        write!(self.out_file, "@CALL{} \n\
+                               D=A \n", self.counter);
+        self.write_push_and_increment();
+
+        //Push LCL
+        self.out_file.write(b"@LCL \n\
+                              D=M \n");
+        self.write_push_and_increment();
+
+        //Push ARG
+        self.out_file.write(b"@ARG \n\
+                              D=M \n");
+        self.write_push_and_increment();
+
+        //Push THIS
+        self.out_file.write(b"@THIS \n\
+                              D=M \n");
+        self.write_push_and_increment();
+
+        //Push THAT
+        self.out_file.write(b"@THAT \n\
+                              D=M \n");
+        self.write_push_and_increment();
+
+        // ARG=SP-n-5
+        write!(self.out_file, "@{} \n\
+                               D=A \n\
+                               @SP \n\
+                               D=M-D \n\
+                               @ARG \n\
+                               M=D \n", num_args);
+
+        // LCL=SP
+        self.out_file.write(b"@SP \n\
+                              D=M \n\
+                              @LCL \n\
+                              M=D \n");
+
+        // goto f and return
+        write!(self.out_file, "@{} \n\
+                               0;JMP \n\
+                               (CALL{})", function_name, self.counter);
+
+        self.counter = self.counter + 1;
     }
 
     pub fn close(&mut self) -> () {

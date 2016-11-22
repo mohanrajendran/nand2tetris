@@ -12,7 +12,8 @@ pub enum CommandType {
     CGoto,
     CIf,
     CFunction,
-    CReturn
+    CReturn,
+    CCall
 }
 
 impl<'a> Parser<'a> {
@@ -66,10 +67,12 @@ impl<'a> Parser<'a> {
             3 => {
                 if tokens[0] == "push" {
                     CommandType::CPush
-                } else if tokens[1] == "pop" {
+                } else if tokens[0] == "pop" {
                     CommandType::CPop
-                } else {
+                } else if tokens[0] == "function" {
                     CommandType::CFunction
+                } else {
+                    CommandType::CCall
                 }
             }
             _ => panic!("Unknown number of tokens.")

@@ -80,6 +80,9 @@ fn translate<'a>(buffer:&'a str,mut code_writer: CodeWriter<'a>, in_file_name: &
             },
             CommandType::CReturn => {
                 code_writer.write_return();
+            },
+            CommandType::CCall => {
+                code_writer.write_call(parser.arg1(), parser.arg2());
             }
         }
     }
