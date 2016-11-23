@@ -1,7 +1,7 @@
 use std::env;
 use std::fs::File;
 use std::io::Read;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 extern crate getopts;
 use getopts::Options;
@@ -24,32 +24,61 @@ fn main() {
 
     let matches = opts.parse(&args[1..]).expect("Unable to parse arguments.");
 
-    let in_file_name = if matches.free.len() == 1 {
-        matches.free[0].clone()
+    let in_path = if matches.free.len() == 1 {
+        Path::new(&matches.free[0])
     } else {
         let brief = format!("Usage: {} FILE [options]", program);
         println!("{}", opts.usage(&brief));
         return;
     };
 
-    let out_file_name = if matches.opt_present("o") {
+    // Set output file
+    let out_file = if matches.opt_present("o") {
         matches.opt_str("o").unwrap()
+    } else if in_path.is_file() {
+        let mut in_path_buf = in_path.to_path_buf();
+        in_path_buf.set_extension("asm");
+        in_path_buf.to_str().unwrap().to_string()
     } else {
-        in_file_name.replace(".vm", ".asm")
+        let dir_name = in_path.file_stem().unwrap();
+        let mut in_path_buf = in_path.to_path_buf();
+        in_path_buf.push(dir_name);
+        in_path_buf.set_extension("asm");
+        in_path_buf.to_str().unwrap().to_string()
     };
 
-    let mut in_file = File::open(&in_file_name).expect("Unable to find file.");
+    println!("{:?}", out_file);
+
+    // Collect input files
+    let input_files = if in_path.is_file() {
+        vec!(in_path.to_path_buf())
+    } else {
+        let in_files = in_path.read_dir().unwrap();
+
+        let in_files:Vec<_> = in_files
+            .map(|entry| entry.unwrap().path())
+            .filter(|path| path.is_file())
+            .filter(|path| path.extension().unwrap() == "vm")
+            .collect();
+
+        in_files
+    };
+
+    println!("{:?}", input_files);
+
+    /*
+    let mut in_file = File::open(&in_path).expect("Unable to find file.");
     let mut buffer = String::new();
     in_file.read_to_string(&mut buffer).expect("Unable to read file.");
     let buffer = &buffer;
 
-    let out_file = File::create(out_file_name).expect("Unable to create file.");
+    let out_file = File::create(out_file).expect("Unable to create file.");
     let code_writer = CodeWriter::new(out_file);
 
-    translate(buffer, code_writer, &in_file_name);
+    translate(buffer, code_writer, &in_path);*/
 }
 
-fn translate<'a>(buffer:&'a str,mut code_writer: CodeWriter<'a>, in_file_name: &'a str) -> () {
+fn translate<'a>(buffer: &'a str, mut code_writer: CodeWriter<'a>, in_file_name: &'a str) -> () {
     let mut parser = Parser::new(buffer);
     let path = Path::new(in_file_name);
     let file_name = path.file_stem().unwrap().to_str().unwrap();
@@ -59,28 +88,27 @@ fn translate<'a>(buffer:&'a str,mut code_writer: CodeWriter<'a>, in_file_name: &
         parser.advance();
 
         match parser.command_type() {
-            CommandType::CPush |
-            CommandType::CPop => {
+            CommandType::CPush | CommandType::CPop => {
                 code_writer.write_push_pop(parser.command_type(), parser.arg1(), parser.arg2());
-            },
+            }
             CommandType::CArithmetic => {
                 code_writer.write_arithmetic(parser.arg1());
-            },
+            }
             CommandType::CLabel => {
                 code_writer.write_label(parser.arg1());
-            },
+            }
             CommandType::CGoto => {
                 code_writer.write_goto(parser.arg1());
-            },
+            }
             CommandType::CIf => {
                 code_writer.write_if(parser.arg1());
-            },
+            }
             CommandType::CFunction => {
                 code_writer.write_function(parser.arg1(), parser.arg2());
-            },
+            }
             CommandType::CReturn => {
                 code_writer.write_return();
-            },
+            }
             CommandType::CCall => {
                 code_writer.write_call(parser.arg1(), parser.arg2());
             }

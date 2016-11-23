@@ -1,6 +1,6 @@
 pub struct Parser<'a> {
     remaining: &'a str,
-    current_line: &'a str
+    current_line: &'a str,
 }
 
 #[derive(Debug, PartialEq)]
@@ -13,14 +13,14 @@ pub enum CommandType {
     CIf,
     CFunction,
     CReturn,
-    CCall
+    CCall,
 }
 
 impl<'a> Parser<'a> {
     pub fn new(buffer: &'a str) -> Self {
         Parser {
             remaining: buffer,
-            current_line: ""
+            current_line: "",
         }
     }
 
@@ -45,7 +45,7 @@ impl<'a> Parser<'a> {
     }
 
     pub fn command_type(&self) -> CommandType {
-        let tokens:Vec<&str> = self.current_line.split(' ').collect();
+        let tokens: Vec<&str> = self.current_line.split(' ').collect();
 
         match tokens.len() {
             1 => {
@@ -54,7 +54,7 @@ impl<'a> Parser<'a> {
                 } else {
                     CommandType::CArithmetic
                 }
-            },
+            }
             2 => {
                 if tokens[0] == "label" {
                     CommandType::CLabel
@@ -63,7 +63,7 @@ impl<'a> Parser<'a> {
                 } else {
                     CommandType::CIf
                 }
-            },
+            }
             3 => {
                 if tokens[0] == "push" {
                     CommandType::CPush
@@ -75,7 +75,7 @@ impl<'a> Parser<'a> {
                     CommandType::CCall
                 }
             }
-            _ => panic!("Unknown number of tokens.")
+            _ => panic!("Unknown number of tokens."),
         }
     }
 
