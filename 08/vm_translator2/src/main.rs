@@ -66,6 +66,10 @@ fn main() {
 
     println!("{:?}", input_files);
 
+    let out_file = File::create(out_file).expect("Unable to create file.");
+    let mut code_writer = CodeWriter::new(out_file);
+    code_writer.write_init();
+
     /*
     let mut in_file = File::open(&in_path).expect("Unable to find file.");
     let mut buffer = String::new();
@@ -76,12 +80,12 @@ fn main() {
     let code_writer = CodeWriter::new(out_file);
 
     translate(buffer, code_writer, &in_path);*/
+
+    code_writer.close();
 }
 
-fn translate<'a>(buffer: &'a str, mut code_writer: CodeWriter<'a>, in_file_name: &'a str) -> () {
+fn translate<'a>(buffer: &'a str, code_writer: &mut CodeWriter<'a>, file_name: &'a str) -> () {
     let mut parser = Parser::new(buffer);
-    let path = Path::new(in_file_name);
-    let file_name = path.file_stem().unwrap().to_str().unwrap();
     code_writer.set_file_name(file_name);
 
     while parser.has_more_commands() {

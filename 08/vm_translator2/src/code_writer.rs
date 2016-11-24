@@ -23,6 +23,15 @@ impl<'a> CodeWriter<'a> {
         self.file_name = name;
     }
 
+    pub fn write_init(&mut self) -> () {
+        self.out_file.write(b"@256 \n\
+                              D=A \n\
+                              @SP \n\
+                              M=D \n\
+                              @Sys.init \n\
+                              0; JMP \n");
+    }
+
     pub fn write_arithmetic(&mut self, command: &str) -> () {
         match command.to_lowercase().as_ref() {
             "add" => self.write_binary_op("M=D+M"),
