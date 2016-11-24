@@ -4,23 +4,25 @@ use std::convert::AsRef;
 
 use parser::CommandType;
 
-pub struct CodeWriter<'a> {
+pub struct CodeWriter {
     out_file: File,
-    file_name: &'a str,
+    file_name: String,
+    function_name: String,
     counter: u16,
 }
 
-impl<'a> CodeWriter<'a> {
+impl CodeWriter {
     pub fn new(out_file: File) -> Self {
         CodeWriter {
             out_file: out_file,
-            file_name: "",
+            file_name: "".to_string(),
+            function_name: "".to_string(),
             counter: 0,
         }
     }
 
-    pub fn set_file_name(&mut self, name: &'a str) -> () {
-        self.file_name = name;
+    pub fn set_file_name(&mut self, name: &str) -> () {
+        self.file_name = name.to_string();
     }
 
     pub fn write_init(&mut self) -> () {
@@ -148,18 +150,24 @@ impl<'a> CodeWriter<'a> {
     }
 
     pub fn write_label(&mut self, label: &str) -> () {
-        write!(self.out_file, "({})\n", label);
+        write!(self.out_file, "({}${})\n", self.function_name, label);
     }
 
     pub fn write_goto(&mut self, label: &str) -> () {
-        write!(self.out_file, "@{} \n0;JMP\n", label);
+        write!(self.out_file, "@{}${} \n\
+                               0;JMP \n", self.function_name, label);
     }
 
     pub fn write_if(&mut self, label: &str) -> () {
-        write!(self.out_file, "@SP \nAM=M-1 \nD=M \n@{} \nD;JNE \n", label);
+        write!(self.out_file, "@SP \n\
+                               AM=M-1 \n\
+                               D=M \n\
+                               @{}${} \n\
+                               D;JNE \n", self.function_name, label);
     }
 
     pub fn write_function(&mut self, function_name: &str, num_locals: u16) -> () {
+        self.function_name = function_name.to_string();
         write!(self.out_file, "({})\n", function_name);
 
         if num_locals != 0 {
@@ -177,6 +185,7 @@ impl<'a> CodeWriter<'a> {
     }
 
     pub fn write_return(&mut self) -> () {
+        self.function_name = "".to_string();
         // FRAME(R14) = LCL
         // RET(R15) = *(FRAME-5)
         self.out_file.write(b"@LCL \n\
@@ -259,14 +268,14 @@ impl<'a> CodeWriter<'a> {
 
         // goto f and return
         write!(self.out_file,
-               "@{} \n0;JMP \n(CALL{})",
-               function_name,
-               self.counter);
+               "@{} \n\
+                0;JMP \n\
+                (CALL{}) \n", function_name, self.counter);
 
         self.counter = self.counter + 1;
     }
 
     pub fn close(&mut self) -> () {
-        write!(self.out_file, "(END) \n@END \n0;JMP");
+        write!(self.out_file, "(END) \n@END \n0;JMP\n");
     }
 }

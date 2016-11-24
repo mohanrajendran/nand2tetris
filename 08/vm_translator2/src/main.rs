@@ -47,8 +47,6 @@ fn main() {
         in_path_buf.to_str().unwrap().to_string()
     };
 
-    println!("{:?}", out_file);
-
     // Collect input files
     let input_files = if in_path.is_file() {
         vec!(in_path.to_path_buf())
@@ -64,26 +62,25 @@ fn main() {
         in_files
     };
 
-    println!("{:?}", input_files);
-
     let out_file = File::create(out_file).expect("Unable to create file.");
     let mut code_writer = CodeWriter::new(out_file);
     code_writer.write_init();
 
-    let mut in_file = File::open(&input_files[0]).expect("Unable to find file.");
-    let mut buffer = String::new();
-    in_file.read_to_string(&mut buffer).expect("Unable to read file.");
-    let buffer = &buffer;
-    let in_file_name = input_files[0].file_stem().unwrap().to_str().unwrap();
-
-    translate(buffer, &mut code_writer, in_file_name);
+    for input_file in input_files {
+        translate(&input_file, &mut code_writer);
+    }
 
     code_writer.close();
 }
 
-fn translate<'a>(buffer: &'a str, code_writer: &mut CodeWriter<'a>, file_name: &'a str) -> () {
-    let mut parser = Parser::new(buffer);
-    code_writer.set_file_name(file_name);
+fn translate(input_file: &PathBuf, code_writer: &mut CodeWriter) -> () {
+    let mut in_file = File::open(&input_file).expect("Unable to find file.");
+    let mut buffer = String::new();
+    in_file.read_to_string(&mut buffer).expect("Unable to read file.");
+    let in_file_name = input_file.file_stem().unwrap().to_str().unwrap();
+
+    let mut parser = Parser::new(&buffer);
+    code_writer.set_file_name(in_file_name);
 
     while parser.has_more_commands() {
         parser.advance();
@@ -115,6 +112,4 @@ fn translate<'a>(buffer: &'a str, code_writer: &mut CodeWriter<'a>, file_name: &
             }
         }
     }
-
-    code_writer.close();
 }
