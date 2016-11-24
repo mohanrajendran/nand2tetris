@@ -70,16 +70,13 @@ fn main() {
     let mut code_writer = CodeWriter::new(out_file);
     code_writer.write_init();
 
-    /*
-    let mut in_file = File::open(&in_path).expect("Unable to find file.");
+    let mut in_file = File::open(&input_files[0]).expect("Unable to find file.");
     let mut buffer = String::new();
     in_file.read_to_string(&mut buffer).expect("Unable to read file.");
     let buffer = &buffer;
+    let in_file_name = input_files[0].file_stem().unwrap().to_str().unwrap();
 
-    let out_file = File::create(out_file).expect("Unable to create file.");
-    let code_writer = CodeWriter::new(out_file);
-
-    translate(buffer, code_writer, &in_path);*/
+    translate(buffer, &mut code_writer, in_file_name);
 
     code_writer.close();
 }
