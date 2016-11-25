@@ -29,9 +29,9 @@ impl CodeWriter {
         self.out_file.write(b"@256 \n\
                               D=A \n\
                               @SP \n\
-                              M=D \n\
-                              @Sys.init \n\
-                              0; JMP \n");
+                              M=D \n");
+
+        self.write_call("Sys.init", 0);
     }
 
     pub fn write_arithmetic(&mut self, command: &str) -> () {
@@ -185,7 +185,6 @@ impl CodeWriter {
     }
 
     pub fn write_return(&mut self) -> () {
-        self.function_name = "".to_string();
         // FRAME(R14) = LCL
         // RET(R15) = *(FRAME-5)
         self.out_file.write(b"@LCL \n\
@@ -257,8 +256,12 @@ impl CodeWriter {
 
         // ARG=SP-n-5
         write!(self.out_file,
-               "@{} \nD=A \n@SP \nD=M-D \n@ARG \nM=D \n",
-               num_args);
+               "@{} \n\
+                D=A \n\
+                @SP \n\
+                D=M-D \n\
+                @ARG \n\
+                M=D \n",num_args+5);
 
         // LCL=SP
         self.out_file.write(b"@SP \n\
