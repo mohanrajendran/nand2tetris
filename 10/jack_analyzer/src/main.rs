@@ -38,5 +38,5 @@ fn translate(in_file: PathBuf) {
     file.read_to_string(&mut buffer);
 
     let mut tokenizer = JackTokenizer::new(buffer);
-    tokenizer.print();
+    tokenizer.print_tokens();
 }
