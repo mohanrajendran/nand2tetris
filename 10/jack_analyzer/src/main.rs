@@ -42,6 +42,10 @@ fn translate(in_path: PathBuf) {
     in_file.read_to_string(&mut buffer);
 
     let mut token_path = in_path.clone();
+    let file_name = in_path.clone().file_name().unwrap();
+    token_path.pop();
+    token_path.push("output");
+    token_path.push(file_name);
     token_path.set_extension("tml");
     let mut token_file = File::create(token_path).expect("Unable to create file.");
 
