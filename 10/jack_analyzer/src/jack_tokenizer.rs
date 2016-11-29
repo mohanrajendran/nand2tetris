@@ -53,10 +53,11 @@ impl JackTokenizer {
     pub fn new(buffer: String) -> JackTokenizer {
         let buffer = JackTokenizer::strip(buffer);
         let tokens = JackTokenizer::extract_tokens(buffer);
+        let keyword_specific = "^(".to_string() + RE_KEYWORD + &")$".to_string();
         JackTokenizer {
             tokens: tokens,
             index: None,
-            rexpr_keyword: Regex::new(RE_KEYWORD).unwrap(),
+            rexpr_keyword: Regex::new(&keyword_specific).unwrap(),
             rexpr_symbol: Regex::new(RE_SYMBOL).unwrap(),
             rexpr_integer: Regex::new(RE_INTEGER).unwrap(),
             rexpr_string: Regex::new(RE_STRING).unwrap(),

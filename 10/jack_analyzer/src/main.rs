@@ -54,13 +54,28 @@ fn translate(in_path: PathBuf) {
         tokenizer.advance();
 
         match tokenizer.token_type() {
+            TokenType::KEYWORD => {
+                xml.begin_elem("keyword");
+                xml.text(&format!(" {} ", tokenizer.identifier()));
+            },
             TokenType::SYMBOL => {
                 xml.begin_elem("symbol");
                 xml.text(&format!(" {} ", tokenizer.symbol()));
-                xml.end_elem();
+            },
+            TokenType::INT_CONST => {
+                xml.begin_elem("integerConstant");
+                xml.text(&format!(" {} ", tokenizer.int_val()));
+            },
+            TokenType::STRING_CONST => {
+                xml.begin_elem("stringConstant");
+                xml.text(&format!(" {} ", tokenizer.string_val()));
+            },
+            TokenType::IDENTIFIER => {
+                xml.begin_elem("identifier");
+                xml.text(&format!(" {} ", tokenizer.identifier()));
             }
-            _ => {}
         }
+        xml.end_elem();
 
         //println!("{:?}", tokenizer.token_type());
     }
