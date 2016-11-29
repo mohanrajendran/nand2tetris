@@ -5,3 +5,4 @@ authors = ["mohanrajendran <lynermohan@gmail.com>"]
 
 [dependencies]
 regex = "0.1"
+xml_writer = "0.2.1"

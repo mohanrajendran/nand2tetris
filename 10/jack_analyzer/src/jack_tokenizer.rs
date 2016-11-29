@@ -92,6 +92,58 @@ impl JackTokenizer {
         }
     }
 
+    pub fn key_word(&self) -> KeyWord {
+        let ref token = self.tokens[self.index.unwrap()];
+
+        match token.as_str() {
+            "class" => KeyWord::CLASS,
+            "method" => KeyWord::METHOD,
+            "function" => KeyWord::FUNCTION,
+            "constructor" => KeyWord::CONSTRUCTOR,
+            "boolean" => KeyWord::BOOLEAN,
+            "char" => KeyWord::CHAR,
+            "void" => KeyWord::VOID,
+            "var" => KeyWord::VAR,
+            "static" => KeyWord::STATIC,
+            "field" => KeyWord::FIELD,
+            "let" => KeyWord::LET,
+            "do" => KeyWord::DO,
+            "if" => KeyWord::IF,
+            "else" => KeyWord::ELSE,
+            "while" => KeyWord::WHILE,
+            "return" => KeyWord::RETURN,
+            "true" => KeyWord::TRUE,
+            "false" => KeyWord::FALSE,
+            "null" => KeyWord::NULL,
+            "this" => KeyWord::THIS,
+            &_ => panic!()
+        }
+    }
+
+    pub fn symbol(&self) -> char {
+        let ref token = self.tokens[self.index.unwrap()];
+
+        token.chars().nth(0).unwrap()
+    }
+
+    pub fn identifier(&self) -> String {
+        let ref token = self.tokens[self.index.unwrap()];
+
+        token.clone()
+    }
+
+    pub fn int_val(&self) -> u16 {
+        let ref token = self.tokens[self.index.unwrap()];
+
+        token.parse::<u16>().expect("Unable to parase token.")
+    }
+
+    pub fn string_val(&self) -> String {
+        let ref token = self.tokens[self.index.unwrap()];
+
+        token.trim_matches('"').to_string()
+    }
+
     fn strip(buffer: String) -> String {
         // Single-line comments
         let re = Regex::new(r"//[^\n]*\n").unwrap();

@@ -1,12 +1,16 @@
 use std::env;
 use std::fs::File;
-use std::io::Read;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
 extern crate regex;
 
+extern crate xml_writer;
+use xml_writer::XmlWriter;
+
 mod jack_tokenizer;
 use jack_tokenizer::JackTokenizer;
+use jack_tokenizer::TokenType;
 
 fn main() {
     let mut args = env::args();
@@ -32,17 +36,34 @@ fn main() {
     }
 }
 
-fn translate(in_file: PathBuf) {
+fn translate(in_path: PathBuf) {
     let mut buffer = String::new();
-    let mut file = File::open(in_file).expect("File missing");
-    file.read_to_string(&mut buffer);
+    let mut in_file = File::open(&in_path).expect("File missing");
+    in_file.read_to_string(&mut buffer);
+
+    let mut token_path = in_path.clone();
+    token_path.set_extension("tml");
+    let mut token_file = File::create(token_path).expect("Unable to create file.");
 
     let mut tokenizer = JackTokenizer::new(buffer);
-    tokenizer.print();
+
+    let mut xml = XmlWriter::new(token_file);
+    xml.begin_elem("tokens");
 
     while tokenizer.has_more_tokens() {
         tokenizer.advance();
 
-        println!("{:?}", tokenizer.token_type());
+        match tokenizer.token_type() {
+            TokenType::SYMBOL => {
+                xml.begin_elem("symbol");
+                xml.text(&format!(" {} ", tokenizer.symbol()));
+                xml.end_elem();
+            }
+            _ => {}
+        }
+
+        //println!("{:?}", tokenizer.token_type());
     }
+    xml.close();
+    xml.flush();
 }
