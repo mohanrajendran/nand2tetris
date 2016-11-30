@@ -1,4 +1,9 @@
+use std::fs;
+use std::fs::File;
+use std::path::PathBuf;
+
 use regex::Regex;
+use xml_writer::XmlWriter;
 
 #[derive(Debug, PartialEq)]
 pub enum TokenType {
@@ -9,6 +14,7 @@ pub enum TokenType {
     STRING_CONST
 }
 
+#[derive(Debug, PartialEq)]
 pub enum KeyWord {
     CLASS,
     METHOD,
@@ -35,7 +41,7 @@ pub enum KeyWord {
 
 pub struct JackTokenizer {
     tokens: Vec<String>,
-    index: Option<usize>,
+    index: usize,
     rexpr_keyword: Regex,
     rexpr_symbol: Regex,
     rexpr_integer: Regex,
@@ -56,7 +62,7 @@ impl JackTokenizer {
         let keyword_specific = "^(".to_string() + RE_KEYWORD + &")$".to_string();
         JackTokenizer {
             tokens: tokens,
-            index: None,
+            index: 0,
             rexpr_keyword: Regex::new(&keyword_specific).unwrap(),
             rexpr_symbol: Regex::new(RE_SYMBOL).unwrap(),
             rexpr_integer: Regex::new(RE_INTEGER).unwrap(),
@@ -66,19 +72,15 @@ impl JackTokenizer {
     }
 
     pub fn has_more_tokens(&self) -> bool {
-        self.index == None || self.index.unwrap() < self.tokens.len()-1
+        self.index < self.tokens.len()-1
     }
 
     pub fn advance(&mut self) {
-        let temp = self.index.clone();
-        self.index = match temp {
-            None => Some(0),
-            Some(v) => Some(v+1)
-        };
+        self.index = self.index + 1;
     }
 
     pub fn token_type(&self) -> TokenType {
-        let ref token = self.tokens[self.index.unwrap()];
+        let ref token = self.tokens[self.index];
 
         if self.rexpr_keyword.is_match(&token) {
             TokenType::KEYWORD
@@ -94,7 +96,7 @@ impl JackTokenizer {
     }
 
     pub fn key_word(&self) -> KeyWord {
-        let ref token = self.tokens[self.index.unwrap()];
+        let ref token = self.tokens[self.index];
 
         match token.as_str() {
             "class" => KeyWord::CLASS,
@@ -122,25 +124,25 @@ impl JackTokenizer {
     }
 
     pub fn symbol(&self) -> char {
-        let ref token = self.tokens[self.index.unwrap()];
+        let ref token = self.tokens[self.index];
 
         token.chars().nth(0).unwrap()
     }
 
     pub fn identifier(&self) -> String {
-        let ref token = self.tokens[self.index.unwrap()];
+        let ref token = self.tokens[self.index];
 
         token.clone()
     }
 
     pub fn int_val(&self) -> u16 {
-        let ref token = self.tokens[self.index.unwrap()];
+        let ref token = self.tokens[self.index];
 
         token.parse::<u16>().expect("Unable to parase token.")
     }
 
     pub fn string_val(&self) -> String {
-        let ref token = self.tokens[self.index.unwrap()];
+        let ref token = self.tokens[self.index];
 
         token.trim_matches('"').to_string()
     }
@@ -165,7 +167,37 @@ impl JackTokenizer {
             .collect()
     }
 
+    pub fn rewind(&mut self) {
+        self.index = 0
+    }
+
     pub fn print(&self) {
         println!("{:?}", self.tokens);
+    }
+
+    pub fn serialize_current(&self, xml: &mut XmlWriter<File>) {
+        match self.token_type() {
+            TokenType::KEYWORD => {
+                xml.begin_elem("keyword");
+                xml.text(&format!(" {} ", self.identifier()));
+            },
+            TokenType::SYMBOL => {
+                xml.begin_elem("symbol");
+                xml.text(&format!(" {} ", self.symbol()));
+            },
+            TokenType::INT_CONST => {
+                xml.begin_elem("integerConstant");
+                xml.text(&format!(" {} ", self.int_val()));
+            },
+            TokenType::STRING_CONST => {
+                xml.begin_elem("stringConstant");
+                xml.text(&format!(" {} ", self.string_val()));
+            },
+            TokenType::IDENTIFIER => {
+                xml.begin_elem("identifier");
+                xml.text(&format!(" {} ", self.identifier()));
+            }
+        }
+        xml.end_elem();
     }
 }
