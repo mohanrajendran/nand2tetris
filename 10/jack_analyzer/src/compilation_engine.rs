@@ -44,9 +44,11 @@ impl<'a> CompilationEngine<'a> {
     pub fn compile_class(&mut self) {
         self.token_writer.begin_elem("tokens");
         self.ast_writer.begin_elem("class");
-        self.tokenizer.advance();
 
-        // Class name
+        // class
+        self.serialize_and_advance();
+
+        // className
         self.serialize_and_advance();
 
         // {
@@ -69,6 +71,9 @@ impl<'a> CompilationEngine<'a> {
             self.compile_subroutine();
         }
 
+        // }
+        self.serialize_and_advance();
+
         self.ast_writer.end_elem();
         self.token_writer.end_elem();
     }
@@ -80,9 +85,15 @@ impl<'a> CompilationEngine<'a> {
         self.serialize_and_advance();
         // type
         self.serialize_and_advance();
-        // var name
-        self.serialize_and_advance();
-        // class name
+
+        // varName list
+        while
+            self.tokenizer.token_type() != TokenType::SYMBOL ||
+            self.tokenizer.symbol() != ';' {
+                self.serialize_and_advance();
+            }
+
+        // ;
         self.serialize_and_advance();
 
         self.ast_writer.end_elem();
@@ -195,7 +206,7 @@ impl<'a> CompilationEngine<'a> {
 
         // optional .subroutineName
         if
-            self.tokenizer.token_type() == TokenType::SYMBOL ||
+            self.tokenizer.token_type() == TokenType::SYMBOL &&
             self.tokenizer.symbol() == '.' {
                 // .
                 self.serialize_and_advance();
@@ -458,18 +469,22 @@ impl<'a> CompilationEngine<'a> {
     fn compile_expression_list(&mut self) {
         self.ast_writer.begin_elem("expressionList");
 
-        // expression
-        self.compile_expression();
-
-        // multiple optional , expression
-        while
-            self.tokenizer.token_type() == TokenType::SYMBOL &&
-            self.tokenizer.symbol() == ',' {
-                // ,
-                self.serialize_and_advance();
-
+        if
+            self.tokenizer.token_type() != TokenType::SYMBOL ||
+            self.tokenizer.symbol() != ')' {
                 // expression
                 self.compile_expression();
+
+                // multiple optional , expression
+                while
+                    self.tokenizer.token_type() == TokenType::SYMBOL &&
+                    self.tokenizer.symbol() == ',' {
+                        // ,
+                        self.serialize_and_advance();
+
+                        // expression
+                        self.compile_expression();
+                    }
             }
 
         self.ast_writer.end_elem();
