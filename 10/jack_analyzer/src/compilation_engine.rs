@@ -47,12 +47,10 @@ impl<'a> CompilationEngine<'a> {
         self.tokenizer.advance();
 
         // Class name
-        self.serialize_to_both();
-        self.tokenizer.advance();
+        self.serialize_and_advance();
 
         // {
-        self.serialize_to_both();
-        self.tokenizer.advance();
+        self.serialize_and_advance();
 
         // optional classVarDec
         while
@@ -62,6 +60,7 @@ impl<'a> CompilationEngine<'a> {
             self.compile_class_var_dec();
         }
 
+        // optional subroutine
         while
             self.tokenizer.token_type() == TokenType::KEYWORD &&
             (self.tokenizer.key_word() == KeyWord::CONSTRUCTOR ||
@@ -78,17 +77,13 @@ impl<'a> CompilationEngine<'a> {
         self.ast_writer.begin_elem("classVarDec");
 
         // static | field
-        self.serialize_to_both();
-        self.tokenizer.advance();
+        self.serialize_and_advance();
         // type
-        self.serialize_to_both();
-        self.tokenizer.advance();
+        self.serialize_and_advance();
         // var name
-        self.serialize_to_both();
-        self.tokenizer.advance();
+        self.serialize_and_advance();
         // class name
-        self.serialize_to_both();
-        self.tokenizer.advance();
+        self.serialize_and_advance();
 
         self.ast_writer.end_elem();
     }
@@ -97,32 +92,393 @@ impl<'a> CompilationEngine<'a> {
         self.ast_writer.begin_elem("subroutineDec");
 
         // constructor | function | method
-        self.serialize_to_both();
-        self.tokenizer.advance();
+        self.serialize_and_advance();
 
         // void | type
-        self.serialize_to_both();
-        self.tokenizer.advance();
+        self.serialize_and_advance();
 
         // subroutineName
-        self.serialize_to_both();
-        self.tokenizer.advance();
+        self.serialize_and_advance();
 
         // (
-        self.serialize_to_both();
-        self.tokenizer.advance();
+        self.serialize_and_advance();
 
-
+        // optional Parameter List
+        self.compile_parameter_list();
 
         // )
-        self.serialize_to_both();
-        self.tokenizer.advance();
+        self.serialize_and_advance();
+
+        // compile subroutineBody
+        self.ast_writer.begin_elem("subroutineBody");
+
+        // {
+        self.serialize_and_advance();
+
+        // optional varDec
+        while
+            self.tokenizer.token_type() == TokenType::KEYWORD &&
+            self.tokenizer.key_word() == KeyWord::VAR {
+                self.compile_var_dec();
+            }
+
+        // statements
+        self.compile_statements();
+
+        // }
+        self.serialize_and_advance();
+
+        // End subroutineBody and subroutineDec
+        self.ast_writer.end_elem();
+        self.ast_writer.end_elem();
+    }
+
+    fn compile_parameter_list(&mut self) {
+        self.ast_writer.begin_elem("parameterList");
+
+        while
+            self.tokenizer.token_type() != TokenType::SYMBOL ||
+            self.tokenizer.symbol() != ')' {
+                self.serialize_and_advance();
+            }
 
         self.ast_writer.end_elem();
     }
 
-    fn serialize_to_both(&mut self) {
+    fn compile_var_dec(&mut self) {
+        self.ast_writer.begin_elem("varDec");
+
+        // var
+        self.serialize_and_advance();
+
+        // type
+        self.serialize_and_advance();
+
+        // varName list
+        while
+            self.tokenizer.token_type() != TokenType::SYMBOL ||
+            self.tokenizer.symbol() != ';' {
+                self.serialize_and_advance();
+            }
+
+        // ;
+        self.serialize_and_advance();
+
+        self.ast_writer.end_elem();
+    }
+
+    fn compile_statements(&mut self) {
+        self.ast_writer.begin_elem("statements");
+
+        while self.tokenizer.token_type() == TokenType::KEYWORD {
+            match self.tokenizer.key_word() {
+                KeyWord::LET    => self.compile_let(),
+                KeyWord::IF     => self.compile_if(),
+                KeyWord::WHILE  => self.compile_while(),
+                KeyWord::DO     => self.compile_do(),
+                KeyWord::RETURN => self.compile_return(),
+                _ => panic!("Unknown statement starting with {:?}", self.tokenizer.key_word())
+            };
+        }
+
+        self.ast_writer.end_elem();
+    }
+
+    fn compile_do(&mut self) {
+        self.ast_writer.begin_elem("doStatement");
+
+        // do
+        self.serialize_and_advance();
+
+        // subroutineName | className
+        self.serialize_and_advance();
+
+        // optional .subroutineName
+        if
+            self.tokenizer.token_type() == TokenType::SYMBOL ||
+            self.tokenizer.symbol() == '.' {
+                // .
+                self.serialize_and_advance();
+
+                // subroutineName
+                self.serialize_and_advance();
+            }
+
+        // (
+        self.serialize_and_advance();
+
+        // expressionList
+        self.compile_expression_list();
+
+        // )
+        self.serialize_and_advance();
+
+        // ;
+        self.serialize_and_advance();
+
+        self.ast_writer.end_elem();
+    }
+
+    fn compile_let(&mut self) {
+        self.ast_writer.begin_elem("letStatement");
+
+        // let
+        self.serialize_and_advance();
+
+        // varName
+        self.serialize_and_advance();
+
+        // optional index
+        if self.tokenizer.token_type() == TokenType::SYMBOL &&
+            self.tokenizer.symbol() == '[' {
+                // [
+                self.serialize_and_advance();
+
+                // expression
+                self.compile_expression();
+
+                // ]
+                self.serialize_and_advance();
+        }
+
+        // =
+        self.serialize_and_advance();
+
+        // expression
+        self.compile_expression();
+
+        // ;
+        self.serialize_and_advance();
+
+        self.ast_writer.end_elem();
+    }
+
+    fn compile_while(&mut self) {
+        self.ast_writer.begin_elem("whileStatement");
+
+        // while
+        self.serialize_and_advance();
+
+        // (
+        self.serialize_and_advance();
+
+        // expression
+        self.compile_expression();
+
+        // )
+        self.serialize_and_advance();
+
+        // {
+        self.serialize_and_advance();
+
+        // statements
+        self.compile_statements();
+
+        // }
+        self.serialize_and_advance();
+
+        self.ast_writer.end_elem();
+    }
+
+    fn compile_return(&mut self) {
+        self.ast_writer.begin_elem("returnStatement");
+
+        // return
+        self.serialize_and_advance();
+
+        // optional expression
+        if
+            self.tokenizer.token_type() != TokenType::SYMBOL ||
+            self.tokenizer.symbol() != ';' {
+                self.compile_expression();
+            }
+
+        // ;
+        self.serialize_and_advance();
+
+        self.ast_writer.end_elem();
+    }
+
+    fn compile_if(&mut self) {
+        self.ast_writer.begin_elem("ifStatement");
+
+        // if
+        self.serialize_and_advance();
+
+        // (
+        self.serialize_and_advance();
+
+        // expression
+        self.compile_expression();
+
+        // )
+        self.serialize_and_advance();
+
+        // {
+        self.serialize_and_advance();
+
+        // statements
+        self.compile_statements();
+
+        // }
+        self.serialize_and_advance();
+
+        // optional else
+        if
+            self.tokenizer.token_type() == TokenType::KEYWORD &&
+            self.tokenizer.key_word() == KeyWord::ELSE {
+                // else
+                self.serialize_and_advance();
+
+                // {
+                self.serialize_and_advance();
+
+                // statements
+                self.compile_statements();
+
+                // }
+                self.serialize_and_advance();
+            }
+
+        self.ast_writer.end_elem();
+    }
+
+    fn compile_expression(&mut self) {
+        self.ast_writer.begin_elem("expression");
+
+        // term
+        self.compile_term();
+
+        // optional (op term) multiple
+        while self.tokenizer.token_type() == TokenType::SYMBOL &&
+            (self.tokenizer.symbol() == '+' ||
+             self.tokenizer.symbol() == '-' ||
+             self.tokenizer.symbol() == '*' ||
+             self.tokenizer.symbol() == '/' ||
+             self.tokenizer.symbol() == '&' ||
+             self.tokenizer.symbol() == '|' ||
+             self.tokenizer.symbol() == '<' ||
+             self.tokenizer.symbol() == '>' ||
+             self.tokenizer.symbol() == '=') {
+                // op
+                self.serialize_and_advance();
+
+                // term
+                self.compile_term();
+            }
+
+        self.ast_writer.end_elem();
+    }
+
+    fn compile_term(&mut self) {
+        self.ast_writer.begin_elem("term");
+
+        match self.tokenizer.token_type() {
+            // integerConstant | stringConstant | keywordConstant
+            TokenType::INT_CONST |
+            TokenType::STRING_CONST |
+            TokenType::KEYWORD => {
+                self.serialize_and_advance();
+            },
+            // unaryOp term | (expression)
+            TokenType::SYMBOL => {
+                // unaryOp term
+                if self.tokenizer.symbol() == '-' ||
+                    self.tokenizer.symbol() == '~' {
+                        self.serialize_and_advance();
+                        self.compile_term();
+                    }
+                // (expression)
+                else {
+                    // (
+                    self.serialize_and_advance();
+
+                    // expression
+                    self.compile_expression();
+
+                    // )
+                    self.serialize_and_advance();
+                }
+            },
+            // varName | varName[expression] |
+            // subroutineName (expressionList) |
+            // className.subroutineName(expressionList)
+            TokenType::IDENTIFIER => {
+                // varName | subroutineName | className
+                self.serialize_and_advance();
+
+                // non-varname
+                if self.tokenizer.token_type() == TokenType::SYMBOL {
+                    // [expression]
+                    if self.tokenizer.symbol() == '[' {
+                        // [
+                        self.serialize_and_advance();
+
+                        // expression
+                        self.compile_expression();
+
+                        // ]
+                        self.serialize_and_advance();
+                    }
+                    // (expressionList)
+                    else if self.tokenizer.symbol() == '(' {
+                        // (
+                        self.serialize_and_advance();
+
+                        // expressionList
+                        self.compile_expression_list();
+
+                        // )
+                        self.serialize_and_advance();
+                    }
+                    // .subroutineName(expressionList)
+                    else if self.tokenizer.symbol() == '.' {
+                        // .
+                        self.serialize_and_advance();
+
+                        // subroutineName
+                        self.serialize_and_advance();
+
+                        // (
+                        self.serialize_and_advance();
+
+                        // expressionList
+                        self.compile_expression_list();
+
+                        // )
+                        self.serialize_and_advance();
+                    }
+                }
+            }
+        }
+
+        self.ast_writer.end_elem();
+    }
+
+    fn compile_expression_list(&mut self) {
+        self.ast_writer.begin_elem("expressionList");
+
+        // expression
+        self.compile_expression();
+
+        // multiple optional , expression
+        while
+            self.tokenizer.token_type() == TokenType::SYMBOL &&
+            self.tokenizer.symbol() == ',' {
+                // ,
+                self.serialize_and_advance();
+
+                // expression
+                self.compile_expression();
+            }
+
+        self.ast_writer.end_elem();
+    }
+
+    fn serialize_and_advance(&mut self) {
         self.tokenizer.serialize_current(&mut self.token_writer);
         self.tokenizer.serialize_current(&mut self.ast_writer);
+
+        self.tokenizer.advance();
     }
 }
