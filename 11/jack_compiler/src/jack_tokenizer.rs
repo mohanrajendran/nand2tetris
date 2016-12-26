@@ -11,7 +11,7 @@ pub enum TokenType {
     SYMBOL,
     IDENTIFIER,
     INT_CONST,
-    STRING_CONST
+    STRING_CONST,
 }
 
 #[derive(Debug, PartialEq)]
@@ -36,7 +36,7 @@ pub enum KeyWord {
     TRUE,
     FALSE,
     NULL,
-    THIS
+    THIS,
 }
 
 pub struct JackTokenizer {
@@ -46,7 +46,7 @@ pub struct JackTokenizer {
     rexpr_symbol: Regex,
     rexpr_integer: Regex,
     rexpr_string: Regex,
-    rexpr_identifier: Regex
+    rexpr_identifier: Regex,
 }
 
 static RE_KEYWORD: &'static str = r"class|method|function|constructor|int|boolean|char|void|var|static|field|let|do|if|else|while|return|true|false|null|this";
@@ -67,12 +67,12 @@ impl JackTokenizer {
             rexpr_symbol: Regex::new(RE_SYMBOL).unwrap(),
             rexpr_integer: Regex::new(RE_INTEGER).unwrap(),
             rexpr_string: Regex::new(RE_STRING).unwrap(),
-            rexpr_identifier: Regex::new(RE_IDENTIFIER).unwrap()
+            rexpr_identifier: Regex::new(RE_IDENTIFIER).unwrap(),
         }
     }
 
     pub fn has_more_tokens(&self) -> bool {
-        self.index < self.tokens.len()-1
+        self.index < self.tokens.len() - 1
     }
 
     pub fn advance(&mut self) {
@@ -119,7 +119,7 @@ impl JackTokenizer {
             "false" => KeyWord::FALSE,
             "null" => KeyWord::NULL,
             "this" => KeyWord::THIS,
-            &_ => panic!()
+            &_ => panic!(),
         }
     }
 
@@ -160,7 +160,12 @@ impl JackTokenizer {
     }
 
     fn extract_tokens(buffer: String) -> Vec<String> {
-        let rExpr = format!(r"{}|{}|{}|{}|{}", RE_KEYWORD, RE_SYMBOL, RE_INTEGER, RE_STRING, RE_IDENTIFIER);
+        let rExpr = format!(r"{}|{}|{}|{}|{}",
+                            RE_KEYWORD,
+                            RE_SYMBOL,
+                            RE_INTEGER,
+                            RE_STRING,
+                            RE_IDENTIFIER);
         let re = Regex::new(&rExpr).unwrap();
         re.captures_iter(&buffer)
             .map(|cap| cap.at(0).unwrap().to_string())
@@ -180,19 +185,19 @@ impl JackTokenizer {
             TokenType::KEYWORD => {
                 xml.begin_elem("keyword");
                 xml.text(&format!(" {} ", self.identifier()));
-            },
+            }
             TokenType::SYMBOL => {
                 xml.begin_elem("symbol");
                 xml.text(&format!(" {} ", self.symbol()));
-            },
+            }
             TokenType::INT_CONST => {
                 xml.begin_elem("integerConstant");
                 xml.text(&format!(" {} ", self.int_val()));
-            },
+            }
             TokenType::STRING_CONST => {
                 xml.begin_elem("stringConstant");
                 xml.text(&format!(" {} ", self.string_val()));
-            },
+            }
             TokenType::IDENTIFIER => {
                 xml.begin_elem("identifier");
                 xml.text(&format!(" {} ", self.identifier()));

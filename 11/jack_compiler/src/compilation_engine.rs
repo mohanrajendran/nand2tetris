@@ -10,7 +10,7 @@ use jack_tokenizer::KeyWord;
 pub struct CompilationEngine<'a> {
     tokenizer: JackTokenizer,
     token_writer: XmlWriter<'a, File>,
-    ast_writer: XmlWriter<'a, File>
+    ast_writer: XmlWriter<'a, File>,
 }
 
 impl<'a> CompilationEngine<'a> {
@@ -37,7 +37,7 @@ impl<'a> CompilationEngine<'a> {
         CompilationEngine {
             tokenizer: JackTokenizer::new(buffer),
             token_writer: XmlWriter::new(token_file),
-            ast_writer: XmlWriter::new(ast_file)
+            ast_writer: XmlWriter::new(ast_file),
         }
     }
 
@@ -55,19 +55,17 @@ impl<'a> CompilationEngine<'a> {
         self.serialize_and_advance();
 
         // optional classVarDec
-        while
-            self.tokenizer.token_type() == TokenType::KEYWORD &&
-            (self.tokenizer.key_word() == KeyWord::STATIC ||
-             self.tokenizer.key_word() == KeyWord::FIELD) {
+        while self.tokenizer.token_type() == TokenType::KEYWORD &&
+              (self.tokenizer.key_word() == KeyWord::STATIC ||
+               self.tokenizer.key_word() == KeyWord::FIELD) {
             self.compile_class_var_dec();
         }
 
         // optional subroutine
-        while
-            self.tokenizer.token_type() == TokenType::KEYWORD &&
-            (self.tokenizer.key_word() == KeyWord::CONSTRUCTOR ||
-             self.tokenizer.key_word() == KeyWord::FUNCTION ||
-             self.tokenizer.key_word() == KeyWord::METHOD) {
+        while self.tokenizer.token_type() == TokenType::KEYWORD &&
+              (self.tokenizer.key_word() == KeyWord::CONSTRUCTOR ||
+               self.tokenizer.key_word() == KeyWord::FUNCTION ||
+               self.tokenizer.key_word() == KeyWord::METHOD) {
             self.compile_subroutine();
         }
 
@@ -87,11 +85,9 @@ impl<'a> CompilationEngine<'a> {
         self.serialize_and_advance();
 
         // varName list
-        while
-            self.tokenizer.token_type() != TokenType::SYMBOL ||
-            self.tokenizer.symbol() != ';' {
-                self.serialize_and_advance();
-            }
+        while self.tokenizer.token_type() != TokenType::SYMBOL || self.tokenizer.symbol() != ';' {
+            self.serialize_and_advance();
+        }
 
         // ;
         self.serialize_and_advance();
@@ -127,11 +123,10 @@ impl<'a> CompilationEngine<'a> {
         self.serialize_and_advance();
 
         // optional varDec
-        while
-            self.tokenizer.token_type() == TokenType::KEYWORD &&
-            self.tokenizer.key_word() == KeyWord::VAR {
-                self.compile_var_dec();
-            }
+        while self.tokenizer.token_type() == TokenType::KEYWORD &&
+              self.tokenizer.key_word() == KeyWord::VAR {
+            self.compile_var_dec();
+        }
 
         // statements
         self.compile_statements();
@@ -147,11 +142,9 @@ impl<'a> CompilationEngine<'a> {
     fn compile_parameter_list(&mut self) {
         self.ast_writer.begin_elem("parameterList");
 
-        while
-            self.tokenizer.token_type() != TokenType::SYMBOL ||
-            self.tokenizer.symbol() != ')' {
-                self.serialize_and_advance();
-            }
+        while self.tokenizer.token_type() != TokenType::SYMBOL || self.tokenizer.symbol() != ')' {
+            self.serialize_and_advance();
+        }
 
         self.ast_writer.end_elem();
     }
@@ -166,11 +159,9 @@ impl<'a> CompilationEngine<'a> {
         self.serialize_and_advance();
 
         // varName list
-        while
-            self.tokenizer.token_type() != TokenType::SYMBOL ||
-            self.tokenizer.symbol() != ';' {
-                self.serialize_and_advance();
-            }
+        while self.tokenizer.token_type() != TokenType::SYMBOL || self.tokenizer.symbol() != ';' {
+            self.serialize_and_advance();
+        }
 
         // ;
         self.serialize_and_advance();
@@ -183,12 +174,15 @@ impl<'a> CompilationEngine<'a> {
 
         while self.tokenizer.token_type() == TokenType::KEYWORD {
             match self.tokenizer.key_word() {
-                KeyWord::LET    => self.compile_let(),
-                KeyWord::IF     => self.compile_if(),
-                KeyWord::WHILE  => self.compile_while(),
-                KeyWord::DO     => self.compile_do(),
+                KeyWord::LET => self.compile_let(),
+                KeyWord::IF => self.compile_if(),
+                KeyWord::WHILE => self.compile_while(),
+                KeyWord::DO => self.compile_do(),
                 KeyWord::RETURN => self.compile_return(),
-                _ => panic!("Unknown statement starting with {:?}", self.tokenizer.key_word())
+                _ => {
+                    panic!("Unknown statement starting with {:?}",
+                           self.tokenizer.key_word())
+                }
             };
         }
 
@@ -205,15 +199,13 @@ impl<'a> CompilationEngine<'a> {
         self.serialize_and_advance();
 
         // optional .subroutineName
-        if
-            self.tokenizer.token_type() == TokenType::SYMBOL &&
-            self.tokenizer.symbol() == '.' {
-                // .
-                self.serialize_and_advance();
+        if self.tokenizer.token_type() == TokenType::SYMBOL && self.tokenizer.symbol() == '.' {
+            // .
+            self.serialize_and_advance();
 
-                // subroutineName
-                self.serialize_and_advance();
-            }
+            // subroutineName
+            self.serialize_and_advance();
+        }
 
         // (
         self.serialize_and_advance();
@@ -240,16 +232,15 @@ impl<'a> CompilationEngine<'a> {
         self.serialize_and_advance();
 
         // optional index
-        if self.tokenizer.token_type() == TokenType::SYMBOL &&
-            self.tokenizer.symbol() == '[' {
-                // [
-                self.serialize_and_advance();
+        if self.tokenizer.token_type() == TokenType::SYMBOL && self.tokenizer.symbol() == '[' {
+            // [
+            self.serialize_and_advance();
 
-                // expression
-                self.compile_expression();
+            // expression
+            self.compile_expression();
 
-                // ]
-                self.serialize_and_advance();
+            // ]
+            self.serialize_and_advance();
         }
 
         // =
@@ -298,11 +289,9 @@ impl<'a> CompilationEngine<'a> {
         self.serialize_and_advance();
 
         // optional expression
-        if
-            self.tokenizer.token_type() != TokenType::SYMBOL ||
-            self.tokenizer.symbol() != ';' {
-                self.compile_expression();
-            }
+        if self.tokenizer.token_type() != TokenType::SYMBOL || self.tokenizer.symbol() != ';' {
+            self.compile_expression();
+        }
 
         // ;
         self.serialize_and_advance();
@@ -335,21 +324,20 @@ impl<'a> CompilationEngine<'a> {
         self.serialize_and_advance();
 
         // optional else
-        if
-            self.tokenizer.token_type() == TokenType::KEYWORD &&
-            self.tokenizer.key_word() == KeyWord::ELSE {
-                // else
-                self.serialize_and_advance();
+        if self.tokenizer.token_type() == TokenType::KEYWORD &&
+           self.tokenizer.key_word() == KeyWord::ELSE {
+            // else
+            self.serialize_and_advance();
 
-                // {
-                self.serialize_and_advance();
+            // {
+            self.serialize_and_advance();
 
-                // statements
-                self.compile_statements();
+            // statements
+            self.compile_statements();
 
-                // }
-                self.serialize_and_advance();
-            }
+            // }
+            self.serialize_and_advance();
+        }
 
         self.ast_writer.end_elem();
     }
@@ -362,21 +350,19 @@ impl<'a> CompilationEngine<'a> {
 
         // optional (op term) multiple
         while self.tokenizer.token_type() == TokenType::SYMBOL &&
-            (self.tokenizer.symbol() == '+' ||
-             self.tokenizer.symbol() == '-' ||
-             self.tokenizer.symbol() == '*' ||
-             self.tokenizer.symbol() == '/' ||
-             self.tokenizer.symbol() == '&' ||
-             self.tokenizer.symbol() == '|' ||
-             self.tokenizer.symbol() == '<' ||
-             self.tokenizer.symbol() == '>' ||
-             self.tokenizer.symbol() == '=') {
-                // op
-                self.serialize_and_advance();
+              (self.tokenizer.symbol() == '+' || self.tokenizer.symbol() == '-' ||
+               self.tokenizer.symbol() == '*' || self.tokenizer.symbol() == '/' ||
+               self.tokenizer.symbol() == '&' ||
+               self.tokenizer.symbol() == '|' ||
+               self.tokenizer.symbol() == '<' ||
+               self.tokenizer.symbol() == '>' ||
+               self.tokenizer.symbol() == '=') {
+            // op
+            self.serialize_and_advance();
 
-                // term
-                self.compile_term();
-            }
+            // term
+            self.compile_term();
+        }
 
         self.ast_writer.end_elem();
     }
@@ -390,15 +376,14 @@ impl<'a> CompilationEngine<'a> {
             TokenType::STRING_CONST |
             TokenType::KEYWORD => {
                 self.serialize_and_advance();
-            },
+            }
             // unaryOp term | (expression)
             TokenType::SYMBOL => {
                 // unaryOp term
-                if self.tokenizer.symbol() == '-' ||
-                    self.tokenizer.symbol() == '~' {
-                        self.serialize_and_advance();
-                        self.compile_term();
-                    }
+                if self.tokenizer.symbol() == '-' || self.tokenizer.symbol() == '~' {
+                    self.serialize_and_advance();
+                    self.compile_term();
+                }
                 // (expression)
                 else {
                     // (
@@ -410,7 +395,7 @@ impl<'a> CompilationEngine<'a> {
                     // )
                     self.serialize_and_advance();
                 }
-            },
+            }
             // varName | varName[expression] |
             // subroutineName (expressionList) |
             // className.subroutineName(expressionList)
@@ -469,23 +454,20 @@ impl<'a> CompilationEngine<'a> {
     fn compile_expression_list(&mut self) {
         self.ast_writer.begin_elem("expressionList");
 
-        if
-            self.tokenizer.token_type() != TokenType::SYMBOL ||
-            self.tokenizer.symbol() != ')' {
+        if self.tokenizer.token_type() != TokenType::SYMBOL || self.tokenizer.symbol() != ')' {
+            // expression
+            self.compile_expression();
+
+            // multiple optional , expression
+            while self.tokenizer.token_type() == TokenType::SYMBOL &&
+                  self.tokenizer.symbol() == ',' {
+                // ,
+                self.serialize_and_advance();
+
                 // expression
                 self.compile_expression();
-
-                // multiple optional , expression
-                while
-                    self.tokenizer.token_type() == TokenType::SYMBOL &&
-                    self.tokenizer.symbol() == ',' {
-                        // ,
-                        self.serialize_and_advance();
-
-                        // expression
-                        self.compile_expression();
-                    }
             }
+        }
 
         self.ast_writer.end_elem();
     }

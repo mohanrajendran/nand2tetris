@@ -24,7 +24,7 @@ fn main() {
         output_path.push("output");
         fs::create_dir_all(&output_path).expect("Unable to create output directory");
 
-        vec!(in_path.to_path_buf())
+        vec![in_path.to_path_buf()]
     } else {
         let mut output_path = in_path.clone();
         output_path.push("output");
@@ -32,8 +32,7 @@ fn main() {
 
         let in_files = in_path.read_dir().unwrap();
 
-        in_files
-            .map(|entry| entry.unwrap().path())
+        in_files.map(|entry| entry.unwrap().path())
             .filter(|path| path.is_file())
             .filter(|path| path.extension().unwrap() == "jack")
             .collect()
