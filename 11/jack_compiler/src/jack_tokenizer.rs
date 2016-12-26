@@ -3,7 +3,6 @@ use std::fs::File;
 use std::path::PathBuf;
 
 use regex::Regex;
-use xml_writer::XmlWriter;
 
 #[derive(Debug, PartialEq)]
 pub enum TokenType {
@@ -180,29 +179,4 @@ impl JackTokenizer {
         println!("{:?}", self.tokens);
     }
 
-    pub fn serialize_current(&self, xml: &mut XmlWriter<File>) {
-        match self.token_type() {
-            TokenType::KEYWORD => {
-                xml.begin_elem("keyword");
-                xml.text(&format!(" {} ", self.identifier()));
-            }
-            TokenType::SYMBOL => {
-                xml.begin_elem("symbol");
-                xml.text(&format!(" {} ", self.symbol()));
-            }
-            TokenType::INT_CONST => {
-                xml.begin_elem("integerConstant");
-                xml.text(&format!(" {} ", self.int_val()));
-            }
-            TokenType::STRING_CONST => {
-                xml.begin_elem("stringConstant");
-                xml.text(&format!(" {} ", self.string_val()));
-            }
-            TokenType::IDENTIFIER => {
-                xml.begin_elem("identifier");
-                xml.text(&format!(" {} ", self.identifier()));
-            }
-        }
-        xml.end_elem();
-    }
 }

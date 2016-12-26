@@ -1,47 +1,40 @@
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::PathBuf;
-use xml_writer::XmlWriter;
 
 use jack_tokenizer::JackTokenizer;
 use jack_tokenizer::TokenType;
 use jack_tokenizer::KeyWord;
 
-pub struct CompilationEngine<'a> {
+use symbol_table::SymbolTable;
+
+use vm_writer::VMWriter;
+
+pub struct CompilationEngine {
     tokenizer: JackTokenizer,
-    token_writer: XmlWriter<'a, File>,
-    ast_writer: XmlWriter<'a, File>,
+    vm_writer: VMWriter,
+    symbol_table: SymbolTable
 }
 
-impl<'a> CompilationEngine<'a> {
-    pub fn new(in_path: PathBuf) -> CompilationEngine<'a> {
+impl CompilationEngine {
+    pub fn new(in_path: PathBuf) -> CompilationEngine {
         let mut buffer = String::new();
         let mut in_file = File::open(&in_path).expect("File missing");
         in_file.read_to_string(&mut buffer);
 
-        let file_name = in_path.file_stem().unwrap();
-        let mut output_folder = in_path.clone();
-        output_folder.pop();
-        output_folder.push("output");
-
-        let mut token_path = output_folder.clone();
-        token_path.push(file_name.to_str().unwrap().to_string() + "T");
-        token_path.set_extension("xml");
-        let mut token_file = File::create(token_path).expect("Unable to create file.");
-
-        let mut ast_path = output_folder.clone();
-        ast_path.push(file_name);
-        ast_path.set_extension("xml");
-        let mut ast_file = File::create(ast_path).expect("Unable to create file.");
+        let mut out_path = in_path.clone();
+        out_path.set_extension("vm");
+        let mut out_file = File::create(out_path).expect("Unable to create output file.");
 
         CompilationEngine {
             tokenizer: JackTokenizer::new(buffer),
-            token_writer: XmlWriter::new(token_file),
-            ast_writer: XmlWriter::new(ast_file),
+            vm_writer: VMWriter::new(out_file),
+            symbol_table: SymbolTable::new()
         }
     }
 
     pub fn compile_class(&mut self) {
+        /*
         self.token_writer.begin_elem("tokens");
         self.ast_writer.begin_elem("class");
 
@@ -470,12 +463,7 @@ impl<'a> CompilationEngine<'a> {
         }
 
         self.ast_writer.end_elem();
+        */
     }
 
-    fn serialize_and_advance(&mut self) {
-        self.tokenizer.serialize_current(&mut self.token_writer);
-        self.tokenizer.serialize_current(&mut self.ast_writer);
-
-        self.tokenizer.advance();
-    }
 }

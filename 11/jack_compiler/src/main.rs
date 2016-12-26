@@ -3,11 +3,11 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 extern crate regex;
-extern crate xml_writer;
 
 mod jack_tokenizer;
 mod compilation_engine;
 mod symbol_table;
+mod vm_writer;
 
 use compilation_engine::CompilationEngine;
 
