@@ -7,13 +7,15 @@ use jack_tokenizer::TokenType;
 use jack_tokenizer::KeyWord;
 
 use symbol_table::SymbolTable;
+use symbol_table::IdentifierKind;
 
 use vm_writer::VMWriter;
 
 pub struct CompilationEngine {
     tokenizer: JackTokenizer,
     vm_writer: VMWriter,
-    symbol_table: SymbolTable
+    symbol_table: SymbolTable,
+    class_name: String
 }
 
 impl CompilationEngine {
@@ -29,23 +31,21 @@ impl CompilationEngine {
         CompilationEngine {
             tokenizer: JackTokenizer::new(buffer),
             vm_writer: VMWriter::new(out_file),
-            symbol_table: SymbolTable::new()
+            symbol_table: SymbolTable::new(),
+            class_name: "".to_string()
         }
     }
 
     pub fn compile_class(&mut self) {
-        /*
-        self.token_writer.begin_elem("tokens");
-        self.ast_writer.begin_elem("class");
-
         // class
-        self.serialize_and_advance();
+        self.tokenizer.advance();
 
         // className
-        self.serialize_and_advance();
+        self.class_name = self.tokenizer.identifier();
+        self.tokenizer.advance();
 
         // {
-        self.serialize_and_advance();
+        self.tokenizer.advance();
 
         // optional classVarDec
         while self.tokenizer.token_type() == TokenType::KEYWORD &&
@@ -53,7 +53,7 @@ impl CompilationEngine {
                self.tokenizer.key_word() == KeyWord::FIELD) {
             self.compile_class_var_dec();
         }
-
+/*
         // optional subroutine
         while self.tokenizer.token_type() == TokenType::KEYWORD &&
               (self.tokenizer.key_word() == KeyWord::CONSTRUCTOR ||
@@ -67,27 +67,34 @@ impl CompilationEngine {
 
         self.ast_writer.end_elem();
         self.token_writer.end_elem();
+        */
     }
 
     fn compile_class_var_dec(&mut self) {
-        self.ast_writer.begin_elem("classVarDec");
-
         // static | field
-        self.serialize_and_advance();
+        let var_kind = match self.tokenizer.key_word() {
+            KeyWord::STATIC => IdentifierKind::STATIC,
+            KeyWord::FIELD => IdentifierKind::FIELD,
+            _ => panic!("Invalid class variable")
+        };
+        self.tokenizer.advance();
+
         // type
-        self.serialize_and_advance();
+        let var_type = self.tokenizer.identifier();
+        self.tokenizer.advance();
 
         // varName list
         while self.tokenizer.token_type() != TokenType::SYMBOL || self.tokenizer.symbol() != ';' {
-            self.serialize_and_advance();
+            if self.tokenizer.token_type() != TokenType::SYMBOL || self.tokenizer.symbol() != ',' {
+                self.symbol_table.define(self.tokenizer.identifier(), var_type.clone(), var_kind.clone());
+            }
+            self.tokenizer.advance();
         }
 
         // ;
-        self.serialize_and_advance();
-
-        self.ast_writer.end_elem();
+        self.tokenizer.advance();
     }
-
+/*
     fn compile_subroutine(&mut self) {
         self.ast_writer.begin_elem("subroutineDec");
 
@@ -463,7 +470,7 @@ impl CompilationEngine {
         }
 
         self.ast_writer.end_elem();
-        */
+        
     }
-
+*/
 }
