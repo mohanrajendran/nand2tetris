@@ -8,7 +8,7 @@ pub enum IdentifierKind {
     VAR,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 struct Record {
     var_type: String,
     kind: IdentifierKind,
@@ -25,6 +25,7 @@ impl Record {
     }
 }
 
+#[derive(Debug)]
 struct Table {
     records: HashMap<String, Record>,
     counts: HashMap<IdentifierKind, u16>,
@@ -59,6 +60,7 @@ impl Table {
     }
 }
 
+#[derive(Debug)]
 pub struct SymbolTable {
     class_table: Table,
     subroutine_table: Table,
