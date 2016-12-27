@@ -53,6 +53,7 @@ impl CompilationEngine {
                self.tokenizer.key_word() == KeyWord::FIELD) {
             self.compile_class_var_dec();
         }
+        
         // optional subroutine
         while self.tokenizer.token_type() == TokenType::KEYWORD &&
               (self.tokenizer.key_word() == KeyWord::CONSTRUCTOR ||
@@ -60,13 +61,9 @@ impl CompilationEngine {
                self.tokenizer.key_word() == KeyWord::METHOD) {
             self.compile_subroutine();
         }
-/*
+
         // }
         self.tokenizer.advance();
-
-        self.ast_writer.end_elem();
-        self.token_writer.end_elem();
-        */
     }
 
     fn compile_class_var_dec(&mut self) {
@@ -98,8 +95,7 @@ impl CompilationEngine {
         self.symbol_table.start_subroutine();
 
         // constructor | function | method
-        if self.tokenizer.key_word() == KeyWord::CONSTRUCTOR ||
-           self.tokenizer.key_word() == KeyWord::METHOD {
+        if self.tokenizer.key_word() == KeyWord::METHOD {
                 self.symbol_table.define("this".to_string(), 
                 self.class_name.clone(), IdentifierKind::ARG);
             }
@@ -109,6 +105,7 @@ impl CompilationEngine {
         self.tokenizer.advance();
 
         // subroutineName
+        let subroutineName = format!("{}.{}", self.class_name, self.tokenizer.identifier());
         self.tokenizer.advance();
 
         // (
@@ -128,6 +125,9 @@ impl CompilationEngine {
               self.tokenizer.key_word() == KeyWord::VAR {
             self.compile_var_dec();
         }
+
+        // Write function declaration
+        self.vm_writer.write_function(subroutineName, self.symbol_table.var_count(IdentifierKind::VAR));
 
         // statements
         self.compile_statements();
