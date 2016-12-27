@@ -8,7 +8,8 @@ pub enum Segment {
     THIS,
     THAT,
     POINTER,
-    TEMP
+    TEMP,
+    CONSTANT
 }
 
 pub enum Command {
@@ -37,13 +38,14 @@ impl VMWriter {
     fn write_segment(&mut self, segment: Segment) {
         self.out_file.write(
             match segment {
-                Segment::ARG     => b"argument ",
-                Segment::LOCAL   => b"local ",
-                Segment::POINTER => b"pointer ",
-                Segment::STATIC  => b"static ",
-                Segment::TEMP    => b"temp ",
-                Segment::THIS    => b"this ",
-                Segment::THAT    => b"that "
+                Segment::ARG      => b"argument ",
+                Segment::LOCAL    => b"local ",
+                Segment::POINTER  => b"pointer ",
+                Segment::STATIC   => b"static ",
+                Segment::TEMP     => b"temp ",
+                Segment::THIS     => b"this ",
+                Segment::THAT     => b"that ",
+                Segment::CONSTANT => b"constant "
         });
     }
 

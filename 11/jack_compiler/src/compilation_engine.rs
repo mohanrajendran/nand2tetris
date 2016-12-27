@@ -10,6 +10,8 @@ use symbol_table::SymbolTable;
 use symbol_table::IdentifierKind;
 
 use vm_writer::VMWriter;
+use vm_writer::Segment;
+use vm_writer::Command;
 
 pub struct CompilationEngine {
     tokenizer: JackTokenizer,
@@ -95,10 +97,7 @@ impl CompilationEngine {
         self.symbol_table.start_subroutine();
 
         // constructor | function | method
-        if self.tokenizer.key_word() == KeyWord::METHOD {
-                self.symbol_table.define("this".to_string(), 
-                self.class_name.clone(), IdentifierKind::ARG);
-            }
+        let subroutineType = self.tokenizer.key_word();
         self.tokenizer.advance();
 
         // void | type
@@ -128,6 +127,13 @@ impl CompilationEngine {
 
         // Write function declaration
         self.vm_writer.write_function(subroutineName, self.symbol_table.var_count(IdentifierKind::VAR));
+        // If constructor, malloc initial 
+        if subroutineType == KeyWord::CONSTRUCTOR {
+            let numField = self.symbol_table.var_count(IdentifierKind::FIELD);
+            self.vm_writer.write_push(Segment::CONSTANT, numField);
+            self.vm_writer.write_call("Memory.alloc".to_string(), 1);
+            self.vm_writer.write_pop(Segment::POINTER, 0);
+        }
 
         // statements
         self.compile_statements();
@@ -191,6 +197,7 @@ impl CompilationEngine {
         self.tokenizer.advance();
 
         // subroutineName | className
+        let mut subroutineName = self.tokenizer.identifier();
         self.tokenizer.advance();
 
         // optional .subroutineName
@@ -199,14 +206,19 @@ impl CompilationEngine {
             self.tokenizer.advance();
 
             // subroutineName
+            subroutineName = subroutineName + "." + &self.tokenizer.identifier();
             self.tokenizer.advance();
+        } else {
+            subroutineName = self.symbol_table.type_of("this".to_string()) + "." + &subroutineName;
         }
 
         // (
         self.tokenizer.advance();
 
         // expressionList
-        self.compile_expression_list();
+        let numArgs = self.compile_expression_list();
+
+        self.vm_writer.write_call(subroutineName, numArgs);
 
         // )
         self.tokenizer.advance();
@@ -269,6 +281,7 @@ impl CompilationEngine {
 
     fn compile_return(&mut self) {
         // return
+        self.vm_writer.write_return();
         self.tokenizer.advance();
 
         // optional expression
@@ -333,27 +346,53 @@ impl CompilationEngine {
                self.tokenizer.symbol() == '>' ||
                self.tokenizer.symbol() == '=') {
             // op
+            let op = self.tokenizer.symbol();
             self.tokenizer.advance();
 
             // term
             self.compile_term();
+            
+            // execute operation on terms
+            match op {
+                '+' => self.vm_writer.write_arithmetic(Command::ADD),
+                '-' => self.vm_writer.write_arithmetic(Command::SUB),
+                '*' => self.vm_writer.write_call("Math.multiply".to_string(), 2),
+                '/' => self.vm_writer.write_call("Math.divide".to_string(), 2),
+                '&' => self.vm_writer.write_arithmetic(Command::AND),
+                '|' => self.vm_writer.write_arithmetic(Command::OR),
+                '<' => self.vm_writer.write_arithmetic(Command::LT),
+                '>' => self.vm_writer.write_arithmetic(Command::GT),
+                '=' => self.vm_writer.write_arithmetic(Command::EQ),
+                _   => panic!("Invalid binary operation.")
+            }
         }
     }
 
     fn compile_term(&mut self) {
         match self.tokenizer.token_type() {
             // integerConstant | stringConstant | keywordConstant
-            TokenType::INT_CONST |
+            TokenType::INT_CONST => {
+                // push constant
+                self.vm_writer.write_push(Segment::CONSTANT, self.tokenizer.int_val());
+                self.tokenizer.advance();
+            },
             TokenType::STRING_CONST |
             TokenType::KEYWORD => {
                 self.tokenizer.advance();
-            }
+            },
             // unaryOp term | (expression)
             TokenType::SYMBOL => {
                 // unaryOp term
                 if self.tokenizer.symbol() == '-' || self.tokenizer.symbol() == '~' {
+                    let op = self.tokenizer.symbol();
                     self.tokenizer.advance();
                     self.compile_term();
+
+                    match op {
+                        '-' => self.vm_writer.write_arithmetic(Command::NEG),
+                        '~' => self.vm_writer.write_arithmetic(Command::NOT),
+                        _   => panic!("Invalid unary op")
+                    }
                 }
                 // (expression)
                 else {
@@ -366,7 +405,7 @@ impl CompilationEngine {
                     // )
                     self.tokenizer.advance();
                 }
-            }
+            },
             // varName | varName[expression] |
             // subroutineName (expressionList) |
             // className.subroutineName(expressionList)
@@ -420,10 +459,12 @@ impl CompilationEngine {
         }
     }
 
-    fn compile_expression_list(&mut self) {
+    fn compile_expression_list(&mut self) -> u16 {
+        let mut count = 0;
         if self.tokenizer.token_type() != TokenType::SYMBOL || self.tokenizer.symbol() != ')' {
             // expression
             self.compile_expression();
+            count += 1;
 
             // multiple optional , expression
             while self.tokenizer.token_type() == TokenType::SYMBOL &&
@@ -433,8 +474,11 @@ impl CompilationEngine {
 
                 // expression
                 self.compile_expression();
+                count += 1;
             }
         }
+
+        count
         
     }
 }
