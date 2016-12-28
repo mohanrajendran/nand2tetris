@@ -88,13 +88,13 @@ impl VMWriter {
 
     pub fn write_goto(&mut self, label: String) {
         self.out_file.write_fmt(
-            format_args!("label {}\n", label)
+            format_args!("goto {}\n", label)
         );
     }
 
     pub fn write_if(&mut self, label: String) {
         self.out_file.write_fmt(
-            format_args!("label {}\n", label)
+            format_args!("if-goto {}\n", label)
         );
     }
 

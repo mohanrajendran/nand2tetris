@@ -17,7 +17,8 @@ pub struct CompilationEngine {
     tokenizer: JackTokenizer,
     vm_writer: VMWriter,
     symbol_table: SymbolTable,
-    class_name: String
+    class_name: String,
+    loop_counter: u16
 }
 
 impl CompilationEngine {
@@ -34,7 +35,8 @@ impl CompilationEngine {
             tokenizer: JackTokenizer::new(buffer),
             vm_writer: VMWriter::new(out_file),
             symbol_table: SymbolTable::new(),
-            class_name: "".to_string()
+            class_name: "".to_string(),
+            loop_counter: 0
         }
     }
 
@@ -95,6 +97,7 @@ impl CompilationEngine {
 
     fn compile_subroutine(&mut self) {
         self.symbol_table.start_subroutine();
+        self.loop_counter = 0;
 
         // constructor | function | method
         let subroutineType = self.tokenizer.key_word();
@@ -232,6 +235,14 @@ impl CompilationEngine {
         self.tokenizer.advance();
 
         // varName
+        let varName = self.tokenizer.identifier();
+        let segment = match self.symbol_table.kind_of(varName.clone()) {
+            IdentifierKind::ARG    => Segment::ARG,
+            IdentifierKind::FIELD  => Segment::THIS,
+            IdentifierKind::STATIC => Segment::STATIC,
+            IdentifierKind::VAR    => Segment::LOCAL
+        };
+        let index = self.symbol_table.index_of(varName);
         self.tokenizer.advance();
 
         // optional index
@@ -252,6 +263,9 @@ impl CompilationEngine {
         // expression
         self.compile_expression();
 
+        // pop computed expression to variable
+        self.vm_writer.write_pop(segment, index);
+
         // ;
         self.tokenizer.advance();
     }
@@ -259,12 +273,21 @@ impl CompilationEngine {
     fn compile_while(&mut self) {
         // while
         self.tokenizer.advance();
+        let counter = self.loop_counter.clone();
+        self.loop_counter += 1;
+        
+        //initial label
+        self.vm_writer.write_label(format!("WHILE_LOOP{}", counter));
 
         // (
         self.tokenizer.advance();
 
         // expression
         self.compile_expression();
+
+        // negate and jump to continue if true
+        self.vm_writer.write_arithmetic(Command::NOT);
+        self.vm_writer.write_if(format!("WHILE_CONTINUE{}", counter));
 
         // )
         self.tokenizer.advance();
@@ -274,14 +297,15 @@ impl CompilationEngine {
 
         // statements
         self.compile_statements();
+        self.vm_writer.write_goto(format!("WHILE_LOOP{}", counter));
 
         // }
         self.tokenizer.advance();
+        self.vm_writer.write_label(format!("WHILE_CONTINUE{}", counter));
     }
 
     fn compile_return(&mut self) {
         // return
-        self.vm_writer.write_return();
         self.tokenizer.advance();
 
         // optional expression
@@ -289,6 +313,7 @@ impl CompilationEngine {
             self.compile_expression();
         }
 
+        self.vm_writer.write_return();
         // ;
         self.tokenizer.advance();
     }
@@ -296,12 +321,18 @@ impl CompilationEngine {
     fn compile_if(&mut self) {
         // if
         self.tokenizer.advance();
+        let counter = self.loop_counter.clone();
+        self.loop_counter += 1;
 
         // (
         self.tokenizer.advance();
 
         // expression
         self.compile_expression();
+
+        // negate and jump to else if true(the negation)
+        self.vm_writer.write_arithmetic(Command::NOT);
+        self.vm_writer.write_if(format!("ELSE{}", counter));
 
         // )
         self.tokenizer.advance();
@@ -314,6 +345,10 @@ impl CompilationEngine {
 
         // }
         self.tokenizer.advance();
+
+        // when first is done, navigate to continue
+        self.vm_writer.write_goto(format!("IF_CONTINUE{}", counter));
+        self.vm_writer.write_label(format!("ELSE{}", counter));
 
         // optional else
         if self.tokenizer.token_type() == TokenType::KEYWORD &&
@@ -330,6 +365,8 @@ impl CompilationEngine {
             // }
             self.tokenizer.advance();
         }
+
+        self.vm_writer.write_label(format!("IF_CONTINUE{}", counter));
     }
 
     fn compile_expression(&mut self) {
@@ -378,6 +415,17 @@ impl CompilationEngine {
             },
             TokenType::STRING_CONST |
             TokenType::KEYWORD => {
+                // push keyword
+                match self.tokenizer.key_word() {
+                    KeyWord::TRUE => {
+                        self.vm_writer.write_push(Segment::CONSTANT, 1);
+                        self.vm_writer.write_arithmetic(Command::NEG)
+                    },
+                    KeyWord::FALSE |
+                    KeyWord::NULL  => self.vm_writer.write_push(Segment::CONSTANT, 0),
+                    KeyWord::THIS  => self.vm_writer.write_push(Segment::POINTER, 0),
+                    _ => panic!("Invalid keyword term")
+                }
                 self.tokenizer.advance();
             },
             // unaryOp term | (expression)
@@ -411,6 +459,7 @@ impl CompilationEngine {
             // className.subroutineName(expressionList)
             TokenType::IDENTIFIER => {
                 // varName | subroutineName | className
+                let mut name = self.tokenizer.identifier();
                 self.tokenizer.advance();
 
                 // non-varname
@@ -428,11 +477,14 @@ impl CompilationEngine {
                     }
                     // (expressionList)
                     else if self.tokenizer.symbol() == '(' {
+                        name = self.symbol_table.type_of("this".to_string()) + "." + &name;
+
                         // (
                         self.tokenizer.advance();
 
                         // expressionList
-                        self.compile_expression_list();
+                        let numArgs = self.compile_expression_list();
+                        self.vm_writer.write_call(name, numArgs);
 
                         // )
                         self.tokenizer.advance();
@@ -443,16 +495,28 @@ impl CompilationEngine {
                         self.tokenizer.advance();
 
                         // subroutineName
+                        name = name + "." + &self.tokenizer.identifier();
                         self.tokenizer.advance();
 
                         // (
                         self.tokenizer.advance();
 
                         // expressionList
-                        self.compile_expression_list();
+                        let numArgs = self.compile_expression_list();
+                        self.vm_writer.write_call(name, numArgs);                        
 
                         // )
                         self.tokenizer.advance();
+                    }
+                    else {
+                        let segment = match self.symbol_table.kind_of(name.clone()) {
+                            IdentifierKind::ARG    => Segment::ARG,
+                            IdentifierKind::FIELD  => Segment::THIS,
+                            IdentifierKind::STATIC => Segment::STATIC,
+                            IdentifierKind::VAR    => Segment::LOCAL
+                        };
+                        let index = self.symbol_table.index_of(name);
+                        self.vm_writer.write_push(segment, index);
                     }
                 }
             }
