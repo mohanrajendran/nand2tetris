@@ -85,10 +85,10 @@ impl JackTokenizer {
             TokenType::KEYWORD
         } else if self.rexpr_symbol.is_match(&token) {
             TokenType::SYMBOL
-        } else if self.rexpr_integer.is_match(&token) {
-            TokenType::INT_CONST
         } else if self.rexpr_string.is_match(&token) {
             TokenType::STRING_CONST
+        } else if self.rexpr_integer.is_match(&token) {
+            TokenType::INT_CONST
         } else {
             TokenType::IDENTIFIER
         }

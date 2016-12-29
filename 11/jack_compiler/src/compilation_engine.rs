@@ -104,6 +104,9 @@ impl CompilationEngine {
         // constructor | function | method
         let subroutineType = self.tokenizer.key_word();
         self.tokenizer.advance();
+        if subroutineType == KeyWord::METHOD {
+            self.symbol_table.define("this".to_string(), self.class_name.clone(), IdentifierKind::ARG);
+        }
 
         // void | type
         self.tokenizer.advance();
@@ -417,7 +420,7 @@ impl CompilationEngine {
                 // push constant
                 self.vm_writer.write_push(Segment::CONSTANT, self.tokenizer.int_val());
                 self.tokenizer.advance();
-            }
+            },
             TokenType::STRING_CONST => {
                 let chars: Vec<u8> = self.tokenizer.string_val().bytes().collect();
                 self.vm_writer.write_push(Segment::CONSTANT, chars.len() as u16);
@@ -444,7 +447,7 @@ impl CompilationEngine {
                     _ => panic!("Invalid keyword term"),
                 }
                 self.tokenizer.advance();
-            }
+            },
             // unaryOp term | (expression)
             TokenType::SYMBOL => {
                 // unaryOp term
@@ -470,7 +473,7 @@ impl CompilationEngine {
                     // )
                     self.tokenizer.advance();
                 }
-            }
+            },
             // varName | varName[expression] |
             // subroutineName (expressionList) |
             // className.subroutineName(expressionList)
