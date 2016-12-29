@@ -230,22 +230,31 @@ impl CompilationEngine {
 
         // varName
         let varName = self.tokenizer.identifier();
-        let segment = match self.symbol_table.kind_of(&varName).expect("Record not found") {
+        let mut segment = match self.symbol_table.kind_of(&varName).expect("Record not found") {
             IdentifierKind::ARG => Segment::ARG,
             IdentifierKind::FIELD => Segment::THIS,
             IdentifierKind::STATIC => Segment::STATIC,
             IdentifierKind::VAR => Segment::LOCAL,
         };
-        let index = self.symbol_table.index_of(&varName).unwrap();
+        let mut index = self.symbol_table.index_of(&varName).unwrap();
         self.tokenizer.advance();
 
         // optional index
         if self.tokenizer.token_type() == TokenType::SYMBOL && self.tokenizer.symbol() == '[' {
+            // push the right location
+            self.vm_writer.write_push(segment, index);
+
             // [
             self.tokenizer.advance();
 
             // expression
             self.compile_expression();
+
+            // compute offset
+            self.vm_writer.write_arithmetic(Command::ADD);
+            self.vm_writer.write_pop(Segment::POINTER, 1);
+            segment = Segment::THAT;
+            index = 0;
 
             // ]
             self.tokenizer.advance();
@@ -409,7 +418,18 @@ impl CompilationEngine {
                 self.vm_writer.write_push(Segment::CONSTANT, self.tokenizer.int_val());
                 self.tokenizer.advance();
             }
-            TokenType::STRING_CONST |
+            TokenType::STRING_CONST => {
+                let chars: Vec<u8> = self.tokenizer.string_val().bytes().collect();
+                self.vm_writer.write_push(Segment::CONSTANT, chars.len() as u16);
+                self.vm_writer.write_call("String.new".to_string(), 1);
+
+                for c in self.tokenizer.string_val().bytes() {
+                    self.vm_writer.write_push(Segment::CONSTANT, c as u16);
+                    self.vm_writer.write_call("String.appendChar".to_string(), 2);
+                }
+            
+                self.tokenizer.advance();
+            },
             TokenType::KEYWORD => {
                 // push keyword
                 match self.tokenizer.key_word() {
