@@ -2,3 +2,189 @@ function SquareGame.new 0
 push constant 2
 call Memory.alloc 1
 pop pointer 0
+push constant 0
+push constant 0
+push constant 30
+call Square.new 3
+pop this 0
+push constant 0
+pop this 1
+push pointer 0
+return
+function SquareGame.dispose 0
+push argument 0
+pop pointer 0
+push this 0
+call Square.dispose 1
+pop temp 0
+push pointer 0
+call Memory.deAlloc 1
+pop temp 0
+push constant 0
+return
+function SquareGame.run 2
+push argument 0
+pop pointer 0
+push constant 0
+pop local 1
+label WHILE_LOOP0
+push local 1
+not
+not
+if-goto WHILE_CONTINUE0
+label WHILE_LOOP1
+push local 0
+push constant 0
+eq
+not
+if-goto WHILE_CONTINUE1
+call Keyboard.keyPressed 0
+pop local 0
+push pointer 0
+call SquareGame.moveSquare 1
+pop temp 0
+goto WHILE_LOOP1
+label WHILE_CONTINUE1
+push local 0
+push constant 81
+eq
+not
+if-goto IF_ELSE2
+push constant 0
+not
+pop local 1
+goto IF_CONTINUE2
+label IF_ELSE2
+label IF_CONTINUE2
+push local 0
+push constant 90
+eq
+not
+if-goto IF_ELSE3
+push this 0
+call Square.decSize 1
+pop temp 0
+goto IF_CONTINUE3
+label IF_ELSE3
+label IF_CONTINUE3
+push local 0
+push constant 88
+eq
+not
+if-goto IF_ELSE4
+push this 0
+call Square.incSize 1
+pop temp 0
+goto IF_CONTINUE4
+label IF_ELSE4
+label IF_CONTINUE4
+push local 0
+push constant 131
+eq
+not
+if-goto IF_ELSE5
+push constant 1
+pop this 1
+goto IF_CONTINUE5
+label IF_ELSE5
+label IF_CONTINUE5
+push local 0
+push constant 133
+eq
+not
+if-goto IF_ELSE6
+push constant 2
+pop this 1
+goto IF_CONTINUE6
+label IF_ELSE6
+label IF_CONTINUE6
+push local 0
+push constant 130
+eq
+not
+if-goto IF_ELSE7
+push constant 3
+pop this 1
+goto IF_CONTINUE7
+label IF_ELSE7
+label IF_CONTINUE7
+push local 0
+push constant 132
+eq
+not
+if-goto IF_ELSE8
+push constant 4
+pop this 1
+goto IF_CONTINUE8
+label IF_ELSE8
+label IF_CONTINUE8
+label WHILE_LOOP9
+push local 0
+push constant 0
+eq
+not
+not
+if-goto WHILE_CONTINUE9
+call Keyboard.keyPressed 0
+pop local 0
+push pointer 0
+call SquareGame.moveSquare 1
+pop temp 0
+goto WHILE_LOOP9
+label WHILE_CONTINUE9
+goto WHILE_LOOP0
+label WHILE_CONTINUE0
+push constant 0
+return
+function SquareGame.moveSquare 0
+push argument 0
+pop pointer 0
+push this 1
+push constant 1
+eq
+not
+if-goto IF_ELSE0
+push this 0
+call Square.moveUp 1
+pop temp 0
+goto IF_CONTINUE0
+label IF_ELSE0
+label IF_CONTINUE0
+push this 1
+push constant 2
+eq
+not
+if-goto IF_ELSE1
+push this 0
+call Square.moveDown 1
+pop temp 0
+goto IF_CONTINUE1
+label IF_ELSE1
+label IF_CONTINUE1
+push this 1
+push constant 3
+eq
+not
+if-goto IF_ELSE2
+push this 0
+call Square.moveLeft 1
+pop temp 0
+goto IF_CONTINUE2
+label IF_ELSE2
+label IF_CONTINUE2
+push this 1
+push constant 4
+eq
+not
+if-goto IF_ELSE3
+push this 0
+call Square.moveRight 1
+pop temp 0
+goto IF_CONTINUE3
+label IF_ELSE3
+label IF_CONTINUE3
+push constant 5
+call Sys.wait 1
+pop temp 0
+push constant 0
+return

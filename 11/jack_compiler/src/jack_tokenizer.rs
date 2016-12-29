@@ -178,5 +178,4 @@ impl JackTokenizer {
     pub fn print(&self) {
         println!("{:?}", self.tokens);
     }
-
 }

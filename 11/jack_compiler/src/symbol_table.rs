@@ -55,8 +55,8 @@ impl Table {
         }
     }
 
-    pub fn get_record(&self, name: String) -> Option<Record> {
-        self.records.get(&name).cloned()
+    pub fn get_record(&self, name: &str) -> Option<Record> {
+        self.records.get(name).cloned()
     }
 }
 
@@ -93,24 +93,22 @@ impl SymbolTable {
         self.class_table.get_count(kind) + self.subroutine_table.get_count(kind)
     }
 
-    fn get_record(&self, name: String) -> Record {
-        let record = match self.subroutine_table.get_record(name.clone()) {
+    fn get_record(&self, name: &str) -> Option<Record> {
+        match self.subroutine_table.get_record(name.clone()) {
             Some(r) => Some(r),
-            None => self.class_table.get_record(name)
-        };
-
-        record.expect("Identifier not found!")
+            None => self.class_table.get_record(name),
+        }
     }
 
-    pub fn kind_of(&self, name: String) -> IdentifierKind {
-        self.get_record(name).kind
+    pub fn kind_of(&self, name: &str) -> Option<IdentifierKind> {
+        self.get_record(name).map(|r| r.kind)
     }
 
-    pub fn type_of(&self, name: String) -> String {
-        self.get_record(name).var_type
+    pub fn type_of(&self, name: &str) -> Option<String> {
+        self.get_record(name).map(|r| r.var_type)
     }
 
-    pub fn index_of(&self, name: String) -> u16 {
-        self.get_record(name).index
+    pub fn index_of(&self, name: &str) -> Option<u16> {
+        self.get_record(name).map(|r| r.index)
     }
 }
