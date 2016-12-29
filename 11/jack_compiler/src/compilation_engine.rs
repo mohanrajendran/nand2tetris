@@ -480,22 +480,11 @@ impl CompilationEngine {
                 self.tokenizer.advance();
 
                 if self.tokenizer.token_type() == TokenType::SYMBOL {
-                    // [expression]
-                    if self.tokenizer.symbol() == '[' {
-                        // [
-                        self.tokenizer.advance();
-
-                        // expression
-                        self.compile_expression();
-
-                        // ]
-                        self.tokenizer.advance();
-                    }
                     // (expressionList) or .subroutineName(expressionList)
-                    else if self.tokenizer.symbol() == '(' || self.tokenizer.symbol() == '.' {
+                    if self.tokenizer.symbol() == '(' || self.tokenizer.symbol() == '.' {
                         self.compile_subroutine_call(name);
                     }
-                    // variable name
+                    // variable name or [expression]
                     else {
                         let segment =
                             match self.symbol_table.kind_of(&name).expect("Record not found") {
@@ -506,6 +495,21 @@ impl CompilationEngine {
                             };
                         let index = self.symbol_table.index_of(&name).unwrap();
                         self.vm_writer.write_push(segment, index);
+
+                        // [expression]
+                        if self.tokenizer.symbol() == '[' {
+                        // [
+                        self.tokenizer.advance();
+
+                        // expression
+                        self.compile_expression();
+                        self.vm_writer.write_arithmetic(Command::ADD);
+                        self.vm_writer.write_pop(Segment::POINTER, 1);
+                        self.vm_writer.write_push(Segment::THAT, 0);
+
+                        // ]
+                        self.tokenizer.advance();
+                        }
                     }
                 }
             }
