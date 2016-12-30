@@ -48,25 +48,29 @@ pub struct JackTokenizer {
     rexpr_identifier: Regex,
 }
 
-static RE_KEYWORD: &'static str = r"class|method|function|constructor|int|boolean|char|void|var|static|field|let|do|if|else|while|return|true|false|null|this";
-static RE_SYMBOL: &'static str = r"[\{\}\(\)\[\]\.,;\+\*/&\|<>=~-]";
-static RE_INTEGER: &'static str = r"\d+";
-static RE_STRING: &'static str = r#""(.+)""#;
-static RE_IDENTIFIER: &'static str = r"[:word:]+";
+static RE_KEYWORD: &'static str = r"(class|method|function|constructor|int|boolean|char|void|var|static|field|let|do|if|else|while|return|true|false|null|this)";
+static RE_SYMBOL: &'static str = r"([\{\}\(\)\[\]\.,;\+\*/&\|<>=~-])";
+static RE_INTEGER: &'static str = r"(\d+)";
+static RE_STRING: &'static str = r#"("(.+)")"#;
+static RE_IDENTIFIER: &'static str = r"([:word:]+)";
 
 impl JackTokenizer {
     pub fn new(buffer: String) -> JackTokenizer {
         let buffer = JackTokenizer::strip(buffer);
         let tokens = JackTokenizer::extract_tokens(buffer);
         let keyword_specific = "^(".to_string() + RE_KEYWORD + &")$".to_string();
+        let symbol_specific = "^(".to_string() + RE_SYMBOL + &")$".to_string();
+        let integer_specific = "^(".to_string() + RE_INTEGER + &")$".to_string();
+        let string_specific = "^(".to_string() + RE_STRING + &")$".to_string();
+        let identifier_specific = "^(".to_string() + RE_IDENTIFIER + &")$".to_string();
         JackTokenizer {
             tokens: tokens,
             index: 0,
             rexpr_keyword: Regex::new(&keyword_specific).unwrap(),
-            rexpr_symbol: Regex::new(RE_SYMBOL).unwrap(),
-            rexpr_integer: Regex::new(RE_INTEGER).unwrap(),
-            rexpr_string: Regex::new(RE_STRING).unwrap(),
-            rexpr_identifier: Regex::new(RE_IDENTIFIER).unwrap(),
+            rexpr_symbol: Regex::new(&symbol_specific).unwrap(),
+            rexpr_integer: Regex::new(&integer_specific).unwrap(),
+            rexpr_string: Regex::new(&string_specific).unwrap(),
+            rexpr_identifier: Regex::new(&identifier_specific).unwrap()
         }
     }
 
@@ -159,8 +163,7 @@ impl JackTokenizer {
     }
 
     fn extract_tokens(buffer: String) -> Vec<String> {
-        let rExpr = format!(r"{}|{}|{}|{}|{}",
-                            RE_KEYWORD,
+        let rExpr = format!(r"{}|{}|{}|{}",
                             RE_SYMBOL,
                             RE_INTEGER,
                             RE_STRING,

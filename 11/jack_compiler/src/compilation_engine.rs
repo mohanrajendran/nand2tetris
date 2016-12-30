@@ -105,7 +105,9 @@ impl CompilationEngine {
         let subroutineType = self.tokenizer.key_word();
         self.tokenizer.advance();
         if subroutineType == KeyWord::METHOD {
-            self.symbol_table.define("this".to_string(), self.class_name.clone(), IdentifierKind::ARG);
+            self.symbol_table.define("this".to_string(),
+                                     self.class_name.clone(),
+                                     IdentifierKind::ARG);
         }
 
         // void | type
@@ -244,33 +246,41 @@ impl CompilationEngine {
 
         // optional index
         if self.tokenizer.token_type() == TokenType::SYMBOL && self.tokenizer.symbol() == '[' {
-            // push the right location
-            self.vm_writer.write_push(segment, index);
-
             // [
+            self.tokenizer.advance();
+
+            // expression(index)
+            self.compile_expression();
+
+            // compute offset
+            self.vm_writer.write_push(segment, index);
+            self.vm_writer.write_arithmetic(Command::ADD);
+
+            // ]
+            self.tokenizer.advance();
+
+            // =
             self.tokenizer.advance();
 
             // expression
             self.compile_expression();
 
-            // compute offset
-            self.vm_writer.write_arithmetic(Command::ADD);
+            // move value to temp location
+            self.vm_writer.write_pop(Segment::TEMP, 0);
+            // retreive offset and store
             self.vm_writer.write_pop(Segment::POINTER, 1);
-            segment = Segment::THAT;
-            index = 0;
-
-            // ]
+            self.vm_writer.write_push(Segment::TEMP, 0);
+            self.vm_writer.write_pop(Segment::THAT, 0);
+        } else {
+            // =
             self.tokenizer.advance();
+
+            // expression
+            self.compile_expression();
+
+            // pop computed expression to variable
+            self.vm_writer.write_pop(segment, index);
         }
-
-        // =
-        self.tokenizer.advance();
-
-        // expression
-        self.compile_expression();
-
-        // pop computed expression to variable
-        self.vm_writer.write_pop(segment, index);
 
         // ;
         self.tokenizer.advance();
@@ -482,7 +492,6 @@ impl CompilationEngine {
                 let name = self.tokenizer.identifier();
                 self.tokenizer.advance();
 
-                if self.tokenizer.token_type() == TokenType::SYMBOL {
                     // (expressionList) or .subroutineName(expressionList)
                     if self.tokenizer.symbol() == '(' || self.tokenizer.symbol() == '.' {
                         self.compile_subroutine_call(name);
@@ -497,8 +506,6 @@ impl CompilationEngine {
                                 IdentifierKind::VAR => Segment::LOCAL,
                             };
                         let index = self.symbol_table.index_of(&name).unwrap();
-                        self.vm_writer.write_push(segment, index);
-
                         // [expression]
                         if self.tokenizer.symbol() == '[' {
                         // [
@@ -506,14 +513,16 @@ impl CompilationEngine {
 
                         // expression
                         self.compile_expression();
+                        self.vm_writer.write_push(segment,index);
                         self.vm_writer.write_arithmetic(Command::ADD);
                         self.vm_writer.write_pop(Segment::POINTER, 1);
                         self.vm_writer.write_push(Segment::THAT, 0);
 
                         // ]
                         self.tokenizer.advance();
+                        } else {
+                            self.vm_writer.write_push(segment, index);
                         }
-                    }
                 }
             }
         }
