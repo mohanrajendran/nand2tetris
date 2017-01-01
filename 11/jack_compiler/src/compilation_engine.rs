@@ -499,7 +499,7 @@ impl CompilationEngine {
                     // variable name or [expression]
                     else {
                         let segment =
-                            match self.symbol_table.kind_of(&name).expect("Record not found") {
+                            match self.symbol_table.kind_of(&name).expect(&format!("Record not found: {}", name)) {
                                 IdentifierKind::ARG => Segment::ARG,
                                 IdentifierKind::FIELD => Segment::THIS,
                                 IdentifierKind::STATIC => Segment::STATIC,
