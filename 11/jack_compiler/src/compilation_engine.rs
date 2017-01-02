@@ -454,7 +454,7 @@ impl CompilationEngine {
                         self.vm_writer.write_push(Segment::CONSTANT, 0)
                     }
                     KeyWord::THIS => self.vm_writer.write_push(Segment::POINTER, 0),
-                    _ => panic!("Invalid keyword term"),
+                    _ => panic!("Invalid keyword term: {}", self.tokenizer.identifier()),
                 }
                 self.tokenizer.advance();
             },
