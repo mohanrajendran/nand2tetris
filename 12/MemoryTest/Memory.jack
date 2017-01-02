@@ -122,12 +122,49 @@ class Memory {
 
     /** De-allocates the given object and frees its space. */
     function void deAlloc(int object) {
-        var Array block;
-        
+        var Array block, prevBlock;
+
         let block = object - 1;
-        let block[NEXT] = freeList;
-        let freeList = block;
+        let prevBlock = Memory.prevBlock(block);
+
+        // Place freed block in the right location and merge with previous if required.
+        if (prevBlock = freeList) {
+            let block[NEXT] = prevBlock;
+            let freeList = block;
+        } else {
+            let block[NEXT] = prevBlock[NEXT];
+            let prevBlock[NEXT] = block;
+            let block = Memory.tryMerge(prevBlock, block);
+        }
+
+        // Try to merge with the next block
+        do Memory.tryMerge(block, block[NEXT]);
 
         return;
-    }    
+    }
+
+    /** Given a block, try to find the last block right behind this.
+        freeList maintains an invariant that all blocks are in memory order */
+    function void prevBlock(Array block) {
+        var Array currentBlock;
+
+        let currentBlock = freeList;
+        while (~(currentBlock[NEXT] = null) & (currentBlock[NEXT] < block)) {
+            let currentBlock = currentBlock[NEXT];
+        }
+
+        return currentBlock;
+    }
+
+    /** Given two blocks, where first block is before the second. Merge them if possible, 
+        return the first block if merging is a success, else second. */
+    function Array tryMerge(Array first, Array second) {
+        if ((first + first[LENGTH]) = second) {
+            let first[NEXT] = second[NEXT];
+            let first[LENGTH] = first[LENGTH] + second[LENGTH];
+            return first;
+        } else {
+            return second;
+        }
+    }
 }

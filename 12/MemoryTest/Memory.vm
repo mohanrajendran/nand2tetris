@@ -215,20 +215,144 @@ pop that 0
 push local 1
 return
 label IF_CONTINUE0
-function Memory.deAlloc 1
+function Memory.deAlloc 2
 push argument 0
 push constant 1
 sub
 pop local 0
+push local 0
+call Memory.prevBlock 1
+pop local 1
+push local 1
+push static 0
+eq
+not
+if-goto IF_ELSE0
 push static 5
 push local 0
 add
-push static 0
+push local 1
 pop temp 0
 pop pointer 1
 push temp 0
 pop that 0
 push local 0
 pop static 0
+goto IF_CONTINUE0
+label IF_ELSE0
+push static 5
+push local 0
+add
+push static 5
+push local 1
+add
+pop pointer 1
+push that 0
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push static 5
+push local 1
+add
+push local 0
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push local 1
+push local 0
+call Memory.tryMerge 2
+pop local 0
+label IF_CONTINUE0
+push local 0
+push static 5
+push local 0
+add
+pop pointer 1
+push that 0
+call Memory.tryMerge 2
+pop temp 0
 push constant 0
 return
+function Memory.prevBlock 1
+push static 0
+pop local 0
+label WHILE_LOOP0
+push static 5
+push local 0
+add
+pop pointer 1
+push that 0
+push constant 0
+eq
+not
+push static 5
+push local 0
+add
+pop pointer 1
+push that 0
+push argument 0
+lt
+and
+not
+if-goto WHILE_CONTINUE0
+push static 5
+push local 0
+add
+pop pointer 1
+push that 0
+pop local 0
+goto WHILE_LOOP0
+label WHILE_CONTINUE0
+push local 0
+return
+function Memory.tryMerge 0
+push argument 0
+push static 4
+push argument 0
+add
+pop pointer 1
+push that 0
+add
+push argument 1
+eq
+not
+if-goto IF_ELSE0
+push static 5
+push argument 0
+add
+push static 5
+push argument 1
+add
+pop pointer 1
+push that 0
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push static 4
+push argument 0
+add
+push static 4
+push argument 0
+add
+pop pointer 1
+push that 0
+push static 4
+push argument 1
+add
+pop pointer 1
+push that 0
+add
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push argument 0
+return
+goto IF_CONTINUE0
+label IF_ELSE0
+push argument 1
+return
+label IF_CONTINUE0
