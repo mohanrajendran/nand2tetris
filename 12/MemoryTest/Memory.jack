@@ -7,26 +7,127 @@
  * Memory operations library.
  */ 
 class Memory {
+    static Array freeList;
+
+    static int heapBase;
+    static int heapMax;
+    static int heapSize;
+
+    static int LENGTH;
+    static int NEXT;
 
     /** Initializes memory parameters. */
     function void init() {
+        let heapBase = 2048;
+        let heapMax = 16384;
+        let heapSize = heapMax - heapBase;
+
+        let LENGTH = 0;
+        let NEXT = 1;
+
+        let freeList = heapBase;
+        let freeList[LENGTH] = heapSize;
+        let freeList[NEXT] = null;
+
+        return;
     }
 
     /** Returns the value of the main memory at the given address. */
     function int peek(int address) {
+        var Array memory;
+        
+        let memory = 0;
+        return memory[address];
     }
 
     /** Sets the value of the main memory at this address
      *  to the given value. */
     function void poke(int address, int value) {
+        var Array memory;
+
+        let memory = 0;
+        let memory[address] = value;
+
+        return;
     }
 
     /** finds and allocates from the heap a memory block of the 
      *  specified size and returns a reference to its base address. */
     function int alloc(int size) {
+        var Array prevBlock;
+        var Array foundBlock;
+
+        let prevBlock = Memory.prevBestBlock(size);
+        if (prevBlock = heapMax) {
+            return null;
+        }
+
+        if (prevBlock = null) {
+            let foundBlock = freeList;
+            let freeList = Memory.remaining(foundBlock, size);
+        } else {
+            let foundBlock = prevBlock[NEXT];
+            let prevBlock[NEXT] = Memory.remaining(foundBlock, size);
+        }
+
+        return foundBlock + 1;
+    }
+
+    /** Finds and returns the predecessor block to the best-fit block
+        1) If first block in freeList is chosen, return null
+        2) If no qualifying blocks are found, return heapMax */
+    function Array prevBestBlock (int size) {
+        var Array bestBlock; // previous to best block
+        var Array prevBlock;
+        var Array curBlock;
+        var int bestSize;
+        var int curSize;
+
+        let prevBlock = null;
+        let bestBlock = heapMax;
+        let curBlock = freeList;
+        let bestSize = heapSize;
+
+        while (~(curBlock = null)) {
+            let curSize = curBlock[LENGTH] - 1;
+            if (~(curSize < size) & (curSize < bestSize)) {
+                let bestBlock = prevBlock;
+                let bestSize = curSize;
+            }
+            let prevBlock = curBlock;
+            let curBlock = curBlock[NEXT];
+        }
+
+        return bestBlock;
+    }
+
+    /** Allocates the required memory in the given block
+        1) If the block is in excess of the memory required, return the excess.
+        2) Else, return the next block */
+    function Array remaining (Array block, int size) {
+        var int remainingMemory;
+        var Array nextBlock;
+
+        let remainingMemory = block[LENGTH] - (size + 1);
+        if (remainingMemory < 3) {
+            return block[NEXT];
+        } else {
+            let block[LENGTH] = size;   
+            let nextBlock = block + size + 1;
+            let nextBlock[LENGTH] = remainingMemory;
+            let nextBlock[NEXT] = block[NEXT];
+            return nextBlock;
+        }
     }
 
     /** De-allocates the given object and frees its space. */
     function void deAlloc(int object) {
+        var Array block;
+        
+        let block = object - 1;
+        let block[NEXT] = freeList;
+        let freeList = block;
+
+        return;
     }    
 }
