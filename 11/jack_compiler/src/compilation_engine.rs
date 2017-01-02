@@ -235,7 +235,7 @@ impl CompilationEngine {
 
         // varName
         let varName = self.tokenizer.identifier();
-        let mut segment = match self.symbol_table.kind_of(&varName).expect("Record not found") {
+        let mut segment = match self.symbol_table.kind_of(&varName).expect(&format!("Record not found: {}", varName)) {
             IdentifierKind::ARG => Segment::ARG,
             IdentifierKind::FIELD => Segment::THIS,
             IdentifierKind::STATIC => Segment::STATIC,
