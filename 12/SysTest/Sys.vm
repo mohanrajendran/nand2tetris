@@ -13,55 +13,30 @@ call Main.main 0
 pop temp 0
 call Sys.halt 0
 pop temp 0
-push constant 0
-return
 function Sys.halt 0
-label WHILE_EXP0
+label WHILE_LOOP0
 push constant 0
 not
 not
-if-goto WHILE_END0
-goto WHILE_EXP0
-label WHILE_END0
+if-goto WHILE_CONTINUE0
+goto WHILE_LOOP0
+label WHILE_CONTINUE0
 push constant 0
 return
-function Sys.wait 1
+function Sys.wait 0
+label WHILE_LOOP0
 push argument 0
 push constant 0
-lt
-if-goto IF_TRUE0
-goto IF_FALSE0
-label IF_TRUE0
-push constant 1
-call Sys.error 1
-pop temp 0
-label IF_FALSE0
-label WHILE_EXP0
-push argument 0
-push constant 0
-gt
+eq
 not
-if-goto WHILE_END0
-push constant 50
-pop local 0
-label WHILE_EXP1
-push local 0
-push constant 0
-gt
 not
-if-goto WHILE_END1
-push local 0
-push constant 1
-sub
-pop local 0
-goto WHILE_EXP1
-label WHILE_END1
+if-goto WHILE_CONTINUE0
 push argument 0
 push constant 1
 sub
 pop argument 0
-goto WHILE_EXP0
-label WHILE_END0
+goto WHILE_LOOP0
+label WHILE_CONTINUE0
 push constant 0
 return
 function Sys.error 0
