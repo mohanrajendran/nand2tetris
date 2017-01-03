@@ -128,8 +128,8 @@ class Memory {
         let prevBlock = Memory.prevBlock(block);
 
         // Place freed block in the right location and merge with previous if required.
-        if (prevBlock = freeList) {
-            let block[NEXT] = prevBlock;
+        if (prevBlock = null) {
+            let block[NEXT] = freeList;
             let freeList = block;
         } else {
             let block[NEXT] = prevBlock[NEXT];
@@ -147,6 +147,11 @@ class Memory {
         freeList maintains an invariant that all blocks are in memory order */
     function void prevBlock(Array block) {
         var Array currentBlock;
+
+        // This block is to be inserted first on the free list.
+        if (freeList > block) {
+            return null;
+        }
 
         let currentBlock = freeList;
         while (~(currentBlock[NEXT] = null) & (currentBlock[NEXT] < block)) {
